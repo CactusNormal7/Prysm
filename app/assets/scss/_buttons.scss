@@ -1,0 +1,55 @@
+@use 'variables' as *;
+
+// Button component
+.btn {
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  font-size: 14px;
+
+  &--primary {
+    background-color: $primary-color;
+    color: white;
+
+    &:hover {
+      background-color: #4f46e5;
+    }
+  }
+
+  &--secondary {
+    background-color: white;
+    color: $text-color;
+    border: 1px solid $border-color;
+
+    &:hover {
+      background-color: $light-gray;
+    }
+  }
+
+  &--full {
+    width: 100%;
+  }
+
+  &--link {
+    background: transparent;
+    color: $primary-color;
+    border: none;
+    text-decoration: none;
+
+    &:hover {
+      background: transparent;
+      color: #4f46e5;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+

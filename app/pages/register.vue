@@ -1,75 +1,68 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50">
-    <div class="max-w-md w-full space-y-8 p-8">
-      <div>
-        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+  <div class="auth-page">
+    <div class="auth-container">
+      <div class="auth-header">
+        <h2 class="auth-title">
           Create your Prysm account
         </h2>
       </div>
-      <form class="mt-8 space-y-6" @submit.prevent="handleRegister">
-        <div class="rounded-md shadow-sm -space-y-px">
-          <div>
-            <label for="email-address" class="sr-only">Email address</label>
-            <input
-              id="email-address"
-              v-model="email"
-              name="email"
-              type="email"
-              autocomplete="email"
-              required
-              class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Email address"
-            />
-          </div>
-          <div>
-            <label for="password" class="sr-only">Password</label>
-            <input
-              id="password"
-              v-model="password"
-              name="password"
-              type="password"
-              autocomplete="new-password"
-              required
-              class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Password"
-            />
-          </div>
-          <div>
-            <label for="confirm-password" class="sr-only">Confirm Password</label>
-            <input
-              id="confirm-password"
-              v-model="confirmPassword"
-              name="confirm-password"
-              type="password"
-              autocomplete="new-password"
-              required
-              class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Confirm Password"
-            />
-          </div>
+      
+      <form class="auth-form" @submit.prevent="handleRegister">
+        <div class="form__group">
+          <label for="email-address" class="form__label">Email address</label>
+          <input
+            id="email-address"
+            v-model="email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+            class="form__input"
+            placeholder="Email address"
+          />
+        </div>
+        
+        <div class="form__group">
+          <label for="password" class="form__label">Password</label>
+          <input
+            id="password"
+            v-model="password"
+            name="password"
+            type="password"
+            autocomplete="new-password"
+            required
+            class="form__input"
+            placeholder="Password"
+          />
+        </div>
+        
+        <div class="form__group">
+          <label for="confirm-password" class="form__label">Confirm Password</label>
+          <input
+            id="confirm-password"
+            v-model="confirmPassword"
+            name="confirm-password"
+            type="password"
+            autocomplete="new-password"
+            required
+            class="form__input"
+            placeholder="Confirm Password"
+          />
         </div>
 
-        <div v-if="error" class="text-red-600 text-sm">{{ error }}</div>
-        <div v-if="success" class="text-green-600 text-sm">{{ success }}</div>
+        <div v-if="error" class="form__error">{{ error }}</div>
+        <div v-if="success" class="form__error" style="color: #10b981;">{{ success }}</div>
 
-        <div>
-          <button
-            type="submit"
-            class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Create account
-          </button>
-        </div>
-
-        <div class="text-center">
-          <NuxtLink
-            to="/login"
-            class="text-sm text-indigo-600 hover:text-indigo-500"
-          >
-            Already have an account? Sign in
-          </NuxtLink>
-        </div>
+        <button type="submit" class="btn btn--primary btn--full">
+          Create account
+        </button>
       </form>
+
+      <div class="auth-footer">
+        <NuxtLink to="/login" class="auth-link">
+          Already have an account? Sign in
+        </NuxtLink>
+      </div>
     </div>
   </div>
 </template>
@@ -114,3 +107,6 @@ const handleRegister = async () => {
 }
 </script>
 
+<style lang="scss">
+// Register uses the same auth styles from main.scss
+</style>

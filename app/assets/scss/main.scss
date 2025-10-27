@@ -1,0 +1,311 @@
+// Import variables directly
+@use 'variables' as *;
+
+// Import reset
+@use 'reset' as *;
+
+// Import components
+@use 'buttons' as *;
+@use 'forms' as *;
+
+// Card component
+.card {
+  background: $white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin-bottom: 16px;
+
+  &__header {
+    margin-bottom: 16px;
+  }
+
+  &__title {
+    font-size: 18px;
+    font-weight: 600;
+    color: $gray-900;
+  }
+
+  &__content {
+    color: $text-color;
+  }
+
+  &__footer {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid $border-color;
+  }
+}
+
+// Layout components
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px;
+
+  &--full {
+    max-width: 100%;
+  }
+}
+
+// Navigation component
+.nav {
+  background: $white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 16px 0;
+  margin-bottom: 24px;
+
+  &__content {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__brand {
+    font-size: 24px;
+    font-weight: bold;
+    color: $primary-color;
+    text-decoration: none;
+  }
+
+  &__links {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+
+    a {
+      color: $text-color;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+
+      &:hover {
+        color: $primary-color;
+      }
+    }
+  }
+
+  &__user {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+}
+
+// Room component
+.room {
+  &__card {
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    padding: 24px;
+    transition: box-shadow 0.2s;
+    cursor: pointer;
+
+    &:hover {
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  &__title {
+    font-size: 18px;
+    font-weight: 600;
+    color: $gray-900;
+  }
+
+  &__status {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+
+    &--open {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+
+    &--locked {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
+
+    &--finished {
+      background-color: #f3f4f6;
+      color: #4b5563;
+    }
+  }
+
+  &__match {
+    font-size: 16px;
+    font-weight: 600;
+    color: $text-color;
+    margin-bottom: 8px;
+  }
+
+  &__meta {
+    font-size: 14px;
+    color: $gray-500;
+    margin-bottom: 4px;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid $border-color;
+  }
+
+  &__participants {
+    color: $primary-color;
+    font-weight: 500;
+  }
+
+  &__fee {
+    color: $gray-600;
+  }
+}
+
+// Stats component
+.stats {
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  &__item {
+    background: $light-gray;
+    border-radius: 8px;
+    padding: 20px;
+  }
+
+  &__value {
+    font-size: 24px;
+    font-weight: bold;
+    color: $primary-color;
+    margin-bottom: 8px;
+  }
+
+  &__label {
+    font-size: 14px;
+    color: $gray-500;
+  }
+}
+
+// Utility classes
+.u {
+  &__text-center {
+    text-align: center;
+  }
+
+  &__text-red {
+    color: #ef4444;
+  }
+
+  &__text-green {
+    color: #10b981;
+  }
+
+  &__mb-4 {
+    margin-bottom: 16px;
+  }
+
+  &__mb-6 {
+    margin-bottom: 24px;
+  }
+
+  &__mt-4 {
+    margin-top: 16px;
+  }
+
+  &__grid {
+    display: grid;
+    gap: 16px;
+  }
+
+  &__flex {
+    display: flex;
+  }
+}
+
+// Screen reader only
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+// Auth pages styles
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $light-gray;
+}
+
+.auth-container {
+  max-width: 400px;
+  width: 100%;
+  padding: 48px 32px;
+  background: $white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.auth-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: $gray-900;
+}
+
+.auth-form {
+  margin-bottom: 24px;
+}
+
+.auth-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-link {
+  text-align: center;
+  color: $primary-color;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #4f46e5;
+  }
+}
