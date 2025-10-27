@@ -2,28 +2,6 @@ export const useAuth = () => {
   const supabase = useSupabaseClient()
   const user = useState('supabase_user', () => null)
   const session = useState('supabase_session', () => null)
-  const initialized = useState('auth_initialized', () => false)
-
-  // Initialize auth state
-  if (!initialized.value && process.client) {
-    initialized.value = true
-    
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      session.value = currentSession
-      user.value = currentSession?.user || null
-    })
-
-    // Listen for auth changes
-    supabase.auth.onAuthStateChange((event, newSession) => {
-      user.value = newSession?.user || null
-      session.value = newSession
-      
-      if (event === 'SIGNED_OUT') {
-        user.value = null
-        session.value = null
-      }
-    })
-  }
 
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -64,7 +42,7 @@ export const useAuth = () => {
     const { data, error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: process.client ? `${window.location.origin}/auth/callback` : ''
+        emailRedirectTo: import.meta.client ? `${window.location.origin}/auth/callback` : ''
       }
     })
     
