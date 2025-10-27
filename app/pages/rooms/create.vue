@@ -1,116 +1,120 @@
 <template>
-  <div class="max-w-2xl mx-auto py-6 sm:px-6 lg:px-8">
-    <div class="bg-white shadow sm:rounded-lg">
-      <div class="px-4 py-5 sm:p-6">
-        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6">Create a Room</h3>
+  <div class="container">
+    <div class="page-header">
+      <h1 class="page-title">Create a Room</h1>
+      <NuxtLink to="/rooms" class="btn btn--secondary">
+        Back to Rooms
+      </NuxtLink>
+    </div>
 
-        <form @submit.prevent="handleSubmit">
-          <div class="space-y-6">
-            <!-- Room Name -->
-            <div>
-              <label for="name" class="block text-sm font-medium text-gray-700">Room Name</label>
-              <input
-                id="name"
-                v-model="form.name"
-                type="text"
-                required
-                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-            </div>
+    <div class="card">
+      <form @submit.prevent="handleSubmit">
+        <!-- Room Name -->
+        <div class="form__group">
+          <label for="name" class="form__label">Room Name</label>
+          <input
+            id="name"
+            v-model="form.name"
+            type="text"
+            required
+            class="form__input"
+            placeholder="Enter room name"
+          />
+        </div>
 
-            <!-- Description -->
-            <div>
-              <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-              <textarea
-                id="description"
-                v-model="form.description"
-                rows="3"
-                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-            </div>
+        <!-- Description -->
+        <div class="form__group">
+          <label for="description" class="form__label">Description</label>
+          <textarea
+            id="description"
+            v-model="form.description"
+            rows="3"
+            class="form__input form__textarea"
+            placeholder="Enter room description"
+          />
+        </div>
 
-            <!-- Room Type -->
-            <div>
-              <label for="type" class="block text-sm font-medium text-gray-700">Room Type</label>
-              <select
-                id="type"
-                v-model="form.type"
-                required
-                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              >
-                <option value="public">Public</option>
-                <option value="private">Private</option>
-              </select>
-            </div>
+        <!-- Room Type -->
+        <div class="form__group">
+          <label for="type" class="form__label">Room Type</label>
+          <select
+            id="type"
+            v-model="form.type"
+            required
+            class="form__input"
+          >
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+          </select>
+        </div>
 
-            <!-- Entry Fee -->
-            <div>
-              <label for="entry_fee" class="block text-sm font-medium text-gray-700">Entry Fee (points)</label>
-              <input
-                id="entry_fee"
-                v-model="form.entry_fee"
-                type="number"
-                min="10"
-                required
-                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-            </div>
+        <!-- Entry Fee -->
+        <div class="form__group">
+          <label for="entry_fee" class="form__label">Entry Fee (points)</label>
+          <input
+            id="entry_fee"
+            v-model.number="form.entry_fee"
+            type="number"
+            min="10"
+            required
+            class="form__input"
+            placeholder="Minimum 10 points"
+          />
+        </div>
 
-            <!-- Teams -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label for="team_home" class="block text-sm font-medium text-gray-700">Home Team</label>
-                <input
-                  id="team_home"
-                  v-model="form.team_home"
-                  type="text"
-                  required
-                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
-              </div>
-              <div>
-                <label for="team_away" class="block text-sm font-medium text-gray-700">Away Team</label>
-                <input
-                  id="team_away"
-                  v-model="form.team_away"
-                  type="text"
-                  required
-                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
-              </div>
-            </div>
-
-            <!-- Match Date -->
-            <div>
-              <label for="match_date" class="block text-sm font-medium text-gray-700">Match Date & Time</label>
-              <input
-                id="match_date"
-                v-model="form.match_date"
-                type="datetime-local"
-                required
-                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-            </div>
+        <!-- Teams -->
+        <div class="teams-grid">
+          <div class="form__group">
+            <label for="team_home" class="form__label">Home Team</label>
+            <input
+              id="team_home"
+              v-model="form.team_home"
+              type="text"
+              required
+              class="form__input"
+              placeholder="Home team name"
+            />
           </div>
-
-          <div v-if="error" class="mt-4 text-red-600 text-sm">{{ error }}</div>
-
-          <div class="mt-6 flex justify-end space-x-3">
-            <NuxtLink to="/rooms">
-              <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
-                Cancel
-              </button>
-            </NuxtLink>
-            <button
-              type="submit"
-              :disabled="loading"
-              class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-            >
-              {{ loading ? 'Creating...' : 'Create Room' }}
-            </button>
+          <div class="form__group">
+            <label for="team_away" class="form__label">Away Team</label>
+            <input
+              id="team_away"
+              v-model="form.team_away"
+              type="text"
+              required
+              class="form__input"
+              placeholder="Away team name"
+            />
           </div>
-        </form>
-      </div>
+        </div>
+
+        <!-- Match Date -->
+        <div class="form__group">
+          <label for="match_date" class="form__label">Match Date & Time</label>
+          <input
+            id="match_date"
+            v-model="form.match_date"
+            type="datetime-local"
+            required
+            class="form__input"
+          />
+        </div>
+
+        <div v-if="error" class="form__error">{{ error }}</div>
+
+        <div class="form-actions">
+          <NuxtLink to="/rooms" class="btn btn--secondary">
+            Cancel
+          </NuxtLink>
+          <button
+            type="submit"
+            :disabled="loading"
+            class="btn btn--primary"
+          >
+            {{ loading ? 'Creating...' : 'Create Room' }}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </template>

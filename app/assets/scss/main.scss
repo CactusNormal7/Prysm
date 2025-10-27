@@ -493,6 +493,78 @@
   }
 }
 
+// Teams grid for form
+.teams-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+// Form actions
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid $border-color;
+}
+
+// Room detail specific styles
+.room-detail {
+  max-width: 900px;
+}
+
+.room-detail__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.room-detail__title {
+  font-size: 28px;
+  font-weight: bold;
+  color: $gray-900;
+  margin-bottom: 8px;
+}
+
+.room-detail__description {
+  color: $gray-600;
+  font-size: 14px;
+}
+
+.room-detail__info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding-top: 24px;
+  border-top: 1px solid $border-color;
+}
+
+.room-detail__match,
+.room-detail__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bet-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: $gray-500;
+}
+
+.points-positive {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.points-negative {
+  color: #ef4444;
+  font-weight: 600;
+}
+
 // Auth pages styles
 .auth-page {
   min-height: 100vh;

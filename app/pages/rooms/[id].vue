@@ -1,188 +1,181 @@
 <template>
-  <div class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
-    <div v-if="loading" class="text-center py-12">
-      Loading room...
+  <div class="container room-detail">
+    <div v-if="loading" class="loading-state">
+      <p>Loading room...</p>
     </div>
 
-    <div v-else-if="!room" class="text-center py-12 text-gray-500">
-      Room not found
+    <div v-else-if="!room" class="empty-state">
+      <p>Room not found</p>
     </div>
 
     <div v-else>
       <!-- Room Header -->
-      <div class="bg-white shadow sm:rounded-lg mb-6">
-        <div class="px-4 py-5 sm:p-6">
-          <div class="flex justify-between items-start">
-            <div>
-              <h1 class="text-2xl font-bold text-gray-900">{{ room.name }}</h1>
-              <p class="text-sm text-gray-600 mt-1">{{ room.description }}</p>
-            </div>
-            <span :class="getStatusBadgeClass(room.status)" class="px-3 py-1 text-sm rounded-full">
-              {{ room.status }}
-            </span>
+      <div class="card">
+        <div class="room-detail__header">
+          <div class="room-detail__title-section">
+            <h1 class="room-detail__title">{{ room.name }}</h1>
+            <p class="room-detail__description">{{ room.description }}</p>
           </div>
+          <span :class="getStatusClass(room.status)" class="room__status">
+            {{ room.status }}
+          </span>
+        </div>
 
-          <div class="mt-6 grid grid-cols-2 gap-4">
-            <div>
-              <h3 class="text-lg font-semibold text-gray-900">{{ room.team_home }} vs {{ room.team_away }}</h3>
-              <p class="text-sm text-gray-600 mt-1">Match Date: {{ formatDate(room.match_date) }}</p>
-              <p class="text-sm text-gray-600">Deadline: {{ formatDate(room.deadline_date) }}</p>
-            </div>
-            <div>
-              <p class="text-sm text-gray-600">Entry Fee: <span class="font-semibold">{{ room.entry_fee }} points</span></p>
-              <p class="text-sm text-gray-600">Participants: <span class="font-semibold">{{ participants.length }}</span></p>
-            </div>
+        <div class="room-detail__info">
+          <div class="room-detail__match">
+            <h3 class="room__match">{{ room.team_home }} vs {{ room.team_away }}</h3>
+            <p class="room__meta">Match Date: {{ formatDate(room.match_date) }}</p>
+            <p class="room__meta">Deadline: {{ formatDate(room.deadline_date) }}</p>
+          </div>
+          <div class="room-detail__stats">
+            <p class="room__meta">Entry Fee: <span class="room__fee">{{ room.entry_fee }} points</span></p>
+            <p class="room__meta">Participants: <span class="room__participants">{{ participants.length }}</span></p>
           </div>
         </div>
       </div>
 
       <!-- Prediction Form (if room is open and user hasn't joined) -->
-      <div v-if="room.status === 'open' && !hasJoined" class="bg-white shadow sm:rounded-lg mb-6">
-        <div class="px-4 py-5 sm:p-6">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Make Your Prediction</h3>
-          
-          <form @submit.prevent="handleJoin">
-            <div class="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label :for="room.team_home" class="block text-sm font-medium text-gray-700">{{ room.team_home }}</label>
-                <input
-                  :id="room.team_home"
-                  v-model.number="prediction.home"
-                  type="number"
-                  min="0"
-                  required
-                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
-              </div>
-              <div>
-                <label :for="room.team_away" class="block text-sm font-medium text-gray-700">{{ room.team_away }}</label>
-                <input
-                  :id="room.team_away"
-                  v-model.number="prediction.away"
-                  type="number"
-                  min="0"
-                  required
-                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
-              </div>
-            </div>
-
-            <div class="mb-4">
-              <label for="bet" class="block text-sm font-medium text-gray-700">Points to Bet</label>
-              <input
-                id="bet"
-                v-model.number="pointsBet"
-                type="number"
-                :min="Math.min(room.entry_fee, 10)"
-                :max="userPoints"
-                required
-                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-              <p class="mt-1 text-sm text-gray-500">Available: {{ userPoints }} points</p>
-            </div>
-
-            <div v-if="joinError" class="text-red-600 text-sm mb-4">{{ joinError }}</div>
-
-            <button
-              type="submit"
-              :disabled="joinLoading"
-              class="w-full px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-            >
-              {{ joinLoading ? 'Joining...' : 'Join Room' }}
-            </button>
-          </form>
+      <div v-if="room.status === 'open' && !hasJoined" class="card">
+        <div class="card__header">
+          <h2 class="card__title">Make Your Prediction</h2>
         </div>
+        
+        <form @submit.prevent="handleJoin">
+          <div class="teams-grid">
+            <div class="form__group">
+              <label :for="room.team_home" class="form__label">{{ room.team_home }}</label>
+              <input
+                :id="room.team_home"
+                v-model.number="prediction.home"
+                type="number"
+                min="0"
+                required
+                class="form__input"
+                placeholder="0"
+              />
+            </div>
+            <div class="form__group">
+              <label :for="room.team_away" class="form__label">{{ room.team_away }}</label>
+              <input
+                :id="room.team_away"
+                v-model.number="prediction.away"
+                type="number"
+                min="0"
+                required
+                class="form__input"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          <div class="form__group">
+            <label for="bet" class="form__label">Points to Bet</label>
+            <input
+              id="bet"
+              v-model.number="pointsBet"
+              type="number"
+              :min="Math.min(room.entry_fee, 10)"
+              :max="userPoints"
+              required
+              class="form__input"
+              placeholder="10"
+            />
+            <p class="bet-hint">Available: {{ userPoints }} points</p>
+          </div>
+
+          <div v-if="joinError" class="form__error">{{ joinError }}</div>
+
+          <button
+            type="submit"
+            :disabled="joinLoading"
+            class="btn btn--primary btn--full"
+          >
+            {{ joinLoading ? 'Joining...' : 'Join Room' }}
+          </button>
+        </form>
       </div>
 
       <!-- Results Submission (for creator) -->
-      <div v-if="isCreator && room.status !== 'finished' && hasParticipants" class="bg-white shadow sm:rounded-lg mb-6">
-        <div class="px-4 py-5 sm:p-6">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Submit Match Results</h3>
-          
-          <form @submit.prevent="handleSubmitResults">
-            <div class="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label :for="`result-${room.team_home}`" class="block text-sm font-medium text-gray-700">{{ room.team_home }}</label>
-                <input
-                  :id="`result-${room.team_home}`"
-                  v-model.number="result.home"
-                  type="number"
-                  min="0"
-                  required
-                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
-              </div>
-              <div>
-                <label :for="`result-${room.team_away}`" class="block text-sm font-medium text-gray-700">{{ room.team_away }}</label>
-                <input
-                  :id="`result-${room.team_away}`"
-                  v-model.number="result.away"
-                  type="number"
-                  min="0"
-                  required
-                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
-              </div>
-            </div>
-
-            <div v-if="submitError" class="text-red-600 text-sm mb-4">{{ submitError }}</div>
-
-            <button
-              type="submit"
-              :disabled="submitLoading"
-              class="w-full px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-            >
-              {{ submitLoading ? 'Submitting...' : 'Submit Results' }}
-            </button>
-          </form>
+      <div v-if="isCreator && room.status !== 'finished' && hasParticipants" class="card">
+        <div class="card__header">
+          <h2 class="card__title">Submit Match Results</h2>
         </div>
+        
+        <form @submit.prevent="handleSubmitResults">
+          <div class="teams-grid">
+            <div class="form__group">
+              <label :for="`result-${room.team_home}`" class="form__label">{{ room.team_home }}</label>
+              <input
+                :id="`result-${room.team_home}`"
+                v-model.number="result.home"
+                type="number"
+                min="0"
+                required
+                class="form__input"
+                placeholder="0"
+              />
+            </div>
+            <div class="form__group">
+              <label :for="`result-${room.team_away}`" class="form__label">{{ room.team_away }}</label>
+              <input
+                :id="`result-${room.team_away}`"
+                v-model.number="result.away"
+                type="number"
+                min="0"
+                required
+                class="form__input"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          <div v-if="submitError" class="form__error">{{ submitError }}</div>
+
+          <button
+            type="submit"
+            :disabled="submitLoading"
+            class="btn btn--primary btn--full"
+          >
+            {{ submitLoading ? 'Submitting...' : 'Submit Results' }}
+          </button>
+        </form>
       </div>
 
       <!-- Participants / Leaderboard -->
-      <div class="bg-white shadow sm:rounded-lg">
-        <div class="px-4 py-5 sm:p-6">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">
+      <div class="card">
+        <div class="card__header">
+          <h2 class="card__title">
             {{ room.status === 'finished' ? 'Final Leaderboard' : 'Participants' }}
-          </h3>
+          </h2>
+        </div>
 
-          <div v-if="participants.length === 0" class="text-center py-8 text-gray-500">
-            No participants yet
-          </div>
+        <div v-if="participants.length === 0" class="empty-state">
+          <p>No participants yet</p>
+        </div>
 
-          <div v-else>
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prediction</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bet</th>
-                    <th v-if="room.status === 'finished'" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                  <tr v-for="participant in sortedParticipants" :key="participant.id">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {{ participant.rank || '-' }}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {{ participant.user?.username || participant.user?.email }}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {{ participant.prediction_home }} - {{ participant.prediction_away }}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {{ participant.points_bet }}
-                    </td>
-                    <td v-if="room.status === 'finished'" class="px-6 py-4 whitespace-nowrap text-sm" :class="participant.points_earned >= 0 ? 'text-green-600' : 'text-red-600'">
-                      {{ participant.points_earned > 0 ? '+' : '' }}{{ participant.points_earned }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+        <div v-else class="table-container">
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>User</th>
+                <th>Prediction</th>
+                <th>Bet</th>
+                <th v-if="room.status === 'finished'">Points</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="participant in sortedParticipants" :key="participant.id">
+                <td class="rank-cell">{{ participant.rank || '-' }}</td>
+                <td>{{ participant.user?.username || participant.user?.email }}</td>
+                <td>{{ participant.prediction_home }} - {{ participant.prediction_away }}</td>
+                <td>{{ participant.points_bet }}</td>
+                <td v-if="room.status === 'finished'" :class="participant.points_earned >= 0 ? 'points-positive' : 'points-negative'">
+                  {{ participant.points_earned > 0 ? '+' : '' }}{{ participant.points_earned }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -235,13 +228,13 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString()
 }
 
-const getStatusBadgeClass = (status: string) => {
+const getStatusClass = (status: string) => {
   const classes = {
-    open: 'bg-green-100 text-green-800',
-    locked: 'bg-yellow-100 text-yellow-800',
-    finished: 'bg-gray-100 text-gray-800'
+    open: 'room__status--open',
+    locked: 'room__status--locked',
+    finished: 'room__status--finished'
   }
-  return classes[status] || 'bg-gray-100 text-gray-800'
+  return classes[status] || ''
 }
 
 const handleJoin = async () => {
