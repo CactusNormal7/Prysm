@@ -1,73 +1,31 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="page-wrapper">
     <!-- Navigation -->
-    <nav class="bg-white shadow-lg">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex">
-            <NuxtLink to="/" class="flex items-center">
-              <h1 class="text-2xl font-bold text-indigo-600">Prysm</h1>
-            </NuxtLink>
-            <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <NuxtLink
-                to="/"
-                class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-indigo-600"
-              >
-                Home
-              </NuxtLink>
-              <NuxtLink
-                to="/rooms"
-                class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900"
-              >
-                Rooms
-              </NuxtLink>
-              <NuxtLink
-                to="/friends"
-                class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900"
-              >
-                Friends
-              </NuxtLink>
-              <NuxtLink
-                to="/leaderboard"
-                class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900"
-              >
-                Leaderboard
-              </NuxtLink>
-            </div>
-          </div>
-          <div class="flex items-center">
-            <div v-if="user" class="flex items-center space-x-4">
-              <span class="text-sm font-medium text-gray-700">
-                Points: {{ user.total_points || 100 }}
-              </span>
-              <NuxtLink
-                to="/profile"
-                class="text-sm font-medium text-gray-500 hover:text-gray-900"
-              >
-                Profile
-              </NuxtLink>
-              <button
-                @click="handleSignOut"
-                class="text-sm font-medium text-gray-500 hover:text-gray-900"
-              >
-                Sign out
-              </button>
-            </div>
-            <div v-else>
-              <NuxtLink
-                to="/login"
-                class="text-sm font-medium text-gray-500 hover:text-gray-900"
-              >
-                Sign in
-              </NuxtLink>
-            </div>
-          </div>
+    <nav class="nav">
+      <div class="nav__content">
+        <NuxtLink to="/" class="nav__brand">Prysm</NuxtLink>
+        <div class="nav__links">
+          <NuxtLink to="/">Home</NuxtLink>
+          <NuxtLink to="/rooms">Rooms</NuxtLink>
+          <NuxtLink to="/friends">Friends</NuxtLink>
+          <NuxtLink to="/leaderboard">Leaderboard</NuxtLink>
+        </div>
+        <div class="nav__user">
+          <NuxtLink v-if="user" to="/profile" class="btn btn--link">
+            <span class="user-points">{{ user.total_points || 100 }} pts</span>
+          </NuxtLink>
+          <NuxtLink v-else to="/login" class="btn btn--secondary">
+            Sign in
+          </NuxtLink>
+          <button v-if="user" @click="handleSignOut" class="btn btn--link">
+            Sign out
+          </button>
         </div>
       </div>
     </nav>
 
     <!-- Main Content -->
-    <main>
+    <main class="main-content">
       <slot />
     </main>
   </div>

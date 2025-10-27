@@ -1,13 +1,11 @@
 <template>
-  <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-    <div class="px-4 py-5 sm:px-6">
-      <h1 class="text-3xl font-bold text-gray-900">Friends</h1>
-    </div>
+  <div class="container">
+    <h1 class="page-title">Friends</h1>
 
-    <!-- TODO: Implement friends system -->
-    <div class="bg-white shadow sm:rounded-lg">
-      <div class="px-4 py-5 sm:p-6">
-        <p class="text-gray-500">Friends feature coming soon...</p>
+    <div class="card">
+      <div class="coming-soon">
+        <h2>Coming Soon</h2>
+        <p>The friends feature will allow you to connect with other players, see their stats, and invite them to private rooms.</p>
       </div>
     </div>
   </div>

@@ -1,41 +1,47 @@
 <template>
-  <div class="max-w-2xl mx-auto py-6 sm:px-6 lg:px-8">
-    <div v-if="loading" class="text-center py-12">
-      Loading profile...
+  <div class="container profile-container">
+    <h1 class="page-title">Profile</h1>
+
+    <div v-if="loading" class="loading-state">
+      <p>Loading profile...</p>
     </div>
 
     <div v-else>
-      <div class="bg-white shadow sm:rounded-lg mb-6">
-        <div class="px-4 py-5 sm:p-6">
-          <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6">Your Profile</h3>
+      <div class="card">
+        <div class="card__header">
+          <h2 class="card__title">Your Profile</h2>
+        </div>
 
-          <div class="grid grid-cols-2 gap-4 mb-6">
-            <div class="bg-gray-50 p-4 rounded-lg">
-              <p class="text-sm text-gray-500">Total Points</p>
-              <p class="text-2xl font-bold text-indigo-600">{{ user?.total_points || 100 }}</p>
-            </div>
-            <div class="bg-gray-50 p-4 rounded-lg">
-              <p class="text-sm text-gray-500">Rooms Joined</p>
-              <p class="text-2xl font-bold text-indigo-600">{{ stats.roomsJoined }}</p>
-            </div>
+        <div class="stats__grid">
+          <div class="stats__item">
+            <p class="stats__label">Total Points</p>
+            <p class="stats__value">{{ user?.total_points || 100 }}</p>
+          </div>
+          <div class="stats__item">
+            <p class="stats__label">Rooms Joined</p>
+            <p class="stats__value">{{ stats.roomsJoined }}</p>
+          </div>
+        </div>
+
+        <div class="profile-info">
+          <div class="form__group">
+            <label class="form__label">Email</label>
+            <p class="form__value">{{ user?.email }}</p>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Email</label>
-            <p class="mt-1 text-sm text-gray-900">{{ user?.email }}</p>
-          </div>
-
-          <div class="mt-4">
-            <label class="block text-sm font-medium text-gray-700">Username</label>
-            <p class="mt-1 text-sm text-gray-900">{{ user?.username || 'Not set' }}</p>
+          <div class="form__group">
+            <label class="form__label">Username</label>
+            <p class="form__value">{{ user?.username || 'Not set' }}</p>
           </div>
         </div>
       </div>
 
-      <div class="bg-white shadow sm:rounded-lg">
-        <div class="px-4 py-5 sm:p-6">
-          <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Activity</h3>
-          <p class="text-gray-500 text-sm">Activity history coming soon...</p>
+      <div class="card">
+        <div class="card__header">
+          <h2 class="card__title">Recent Activity</h2>
+        </div>
+        <div class="coming-soon">
+          <p>Activity history coming soon...</p>
         </div>
       </div>
     </div>

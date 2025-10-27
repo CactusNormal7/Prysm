@@ -1,60 +1,58 @@
 <template>
-  <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-    <div class="px-4 py-5 sm:px-6">
-      <div class="flex justify-between items-center">
-        <h1 class="text-3xl font-bold text-gray-900">Rooms</h1>
-        <NuxtLink to="/rooms/create">
-          <button class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">
-            Create Room
-          </button>
-        </NuxtLink>
-      </div>
+  <div class="container">
+    <div class="page-header">
+      <h1 class="page-title">Rooms</h1>
+      <NuxtLink to="/rooms/create" class="btn btn--primary">
+        Create Room
+      </NuxtLink>
+    </div>
 
+    <div class="card">
       <!-- Filters -->
-      <div class="mt-4 flex space-x-4">
-        <select v-model="filterType" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+      <div class="filters">
+        <select v-model="filterType" class="form__input form__input--small">
           <option value="">All Types</option>
           <option value="public">Public</option>
           <option value="private">Private</option>
         </select>
         
-        <select v-model="filterStatus" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+        <select v-model="filterStatus" class="form__input form__input--small">
           <option value="">All Status</option>
           <option value="open">Open</option>
           <option value="locked">Locked</option>
           <option value="finished">Finished</option>
         </select>
       </div>
-    </div>
 
-    <!-- Rooms List -->
-    <div v-if="loading" class="text-center py-12">
-      Loading rooms...
-    </div>
+      <!-- Rooms List -->
+      <div v-if="loading" class="loading-state">
+        <p>Loading rooms...</p>
+      </div>
 
-    <div v-else-if="rooms.length === 0" class="text-center py-12 text-gray-500">
-      No rooms found. Create the first one!
-    </div>
+      <div v-else-if="filteredRooms.length === 0" class="empty-state">
+        <p>No rooms found. Create the first one!</p>
+      </div>
 
-    <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <div
-        v-for="room in filteredRooms"
-        :key="room.id"
-        class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer"
-        @click="navigateTo(`/rooms/${room.id}`)"
-      >
-        <div class="flex justify-between items-start">
-          <h3 class="text-lg font-semibold text-gray-900">{{ room.name }}</h3>
-          <span :class="getStatusBadgeClass(room.status)" class="px-2 py-1 text-xs rounded-full">
-            {{ room.status }}
-          </span>
-        </div>
-        <p class="text-sm text-gray-600 mt-2">{{ room.team_home }} vs {{ room.team_away }}</p>
-        <p class="text-xs text-gray-400 mt-2">Starts: {{ formatDate(room.match_date) }}</p>
-        <p class="text-xs text-gray-400">Deadline: {{ formatDate(room.deadline_date) }}</p>
-        <div class="mt-4 flex justify-between items-center">
-          <span class="text-sm font-medium text-indigo-600">{{ room.participants || 0 }} participants</span>
-          <span class="text-sm text-gray-500">Entry: {{ room.entry_fee }} pts</span>
+      <div v-else class="rooms-grid">
+        <div
+          v-for="room in filteredRooms"
+          :key="room.id"
+          class="room__card"
+          @click="navigateTo(`/rooms/${room.id}`)"
+        >
+          <div class="room__header">
+            <h3 class="room__title">{{ room.name }}</h3>
+            <span :class="getStatusClass(room.status)" class="room__status">
+              {{ room.status }}
+            </span>
+          </div>
+          <p class="room__match">{{ room.team_home }} vs {{ room.team_away }}</p>
+          <p class="room__meta">Starts: {{ formatDate(room.match_date) }}</p>
+          <p class="room__meta">Deadline: {{ formatDate(room.deadline_date) }}</p>
+          <div class="room__footer">
+            <span class="room__participants">{{ room.participants || 0 }} participants</span>
+            <span class="room__fee">Entry: {{ room.entry_fee }} pts</span>
+          </div>
         </div>
       </div>
     </div>
@@ -91,13 +89,13 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString()
 }
 
-const getStatusBadgeClass = (status: string) => {
+const getStatusClass = (status: string) => {
   const classes = {
-    open: 'bg-green-100 text-green-800',
-    locked: 'bg-yellow-100 text-yellow-800',
-    finished: 'bg-gray-100 text-gray-800'
+    open: 'room__status--open',
+    locked: 'room__status--locked',
+    finished: 'room__status--finished'
   }
-  return classes[status] || 'bg-gray-100 text-gray-800'
+  return classes[status] || ''
 }
 
 onMounted(async () => {
