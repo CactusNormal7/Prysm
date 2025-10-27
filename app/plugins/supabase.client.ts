@@ -12,7 +12,15 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   
   const supabaseClient = createClient(
     supabaseUrl || 'https://placeholder.supabase.co',
-    supabaseKey || 'placeholder-key'
+    supabaseKey || 'placeholder-key',
+    {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      }
+    }
   )
 
   return {

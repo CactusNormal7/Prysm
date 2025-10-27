@@ -96,11 +96,20 @@ const handleRegister = async () => {
   }
 
   try {
-    await signUp(email.value, password.value)
-    success.value = 'Account created! Please check your email to verify.'
-    setTimeout(() => {
-      router.push('/login')
-    }, 2000)
+    const result = await signUp(email.value, password.value)
+    
+    // Check if user is already authenticated (auto-confirmed)
+    if (result.session) {
+      success.value = 'Account created successfully!'
+      setTimeout(() => {
+        router.push('/')
+      }, 1000)
+    } else {
+      success.value = 'Account created! Redirecting to login...'
+      setTimeout(() => {
+        router.push('/login')
+      }, 2000)
+    }
   } catch (err: any) {
     error.value = err.message
   }

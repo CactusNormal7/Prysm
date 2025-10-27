@@ -13,21 +13,38 @@ definePageMeta({
 
 const supabase = useSupabaseClient()
 const router = useRouter()
+const { user } = useAuth()
+
+const verifying = ref(true)
 
 onMounted(async () => {
   try {
+    // Wait a bit to ensure the hash fragments are processed
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
     const { data, error } = await supabase.auth.getSession()
     
-    if (error) throw error
+    if (error) {
+      console.error('Session error:', error)
+      throw error
+    }
     
-    if (data.session) {
+    if (data.session && data.session.user) {
+      console.log('Session established successfully')
+      // Update the user state
+      user.value = data.session.user
+      
+      // Navigate to home
       router.push('/')
     } else {
+      console.log('No session found')
       router.push('/login')
     }
   } catch (error) {
     console.error('Error verifying session:', error)
     router.push('/login')
+  } finally {
+    verifying.value = false
   }
 })
 </script>
