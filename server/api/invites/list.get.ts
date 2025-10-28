@@ -23,9 +23,11 @@ export default defineEventHandler(async (event) => {
   // Get Supabase credentials from runtime config
   const config = useRuntimeConfig()
   const supabase = createClient(
-    config.public.supabaseUrl,
-    config.public.supabaseKey
+    config.public.supabaseUrl as string,
+    config.public.supabaseKey as string
   )
+  
+  console.log('Fetching room invites for user:', user_id)
 
   // Get pending invites
   const { data, error } = await supabase

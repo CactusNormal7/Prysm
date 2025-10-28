@@ -26,50 +26,35 @@
               </div>
               
               <div class="notification-panel__content">
-                <!-- Friend Requests -->
-                <div v-if="friendRequests.length > 0" class="notification-section">
-                  <h4 class="notification-section__title">Friend Requests</h4>
-                  <div v-for="request in friendRequests" :key="request.id" class="notification-item">
-                    <p class="notification-item__text">
-                      {{ request.user?.username || request.user?.email }} wants to be friends
-                    </p>
-                    <div class="notification-item__actions">
-                      <button
-                        @click="acceptFriendRequest(request.id)"
-                        class="btn btn--primary"
-                        :disabled="processing"
-                      >
-                        Accept
-                      </button>
-                      <button
-                        @click="declineFriendRequest(request.id)"
-                        class="btn btn--secondary"
-                        :disabled="processing"
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
                 <!-- Room Invites -->
                 <div v-if="roomInvites.length > 0" class="notification-section">
                   <h4 class="notification-section__title">Room Invitations</h4>
                   <div v-for="invite in roomInvites" :key="invite.id" class="notification-item">
-                    <p class="notification-item__text">
-                      {{ invite.inviter?.username || invite.inviter?.email }} invited you to <strong>{{ invite.room?.name }}</strong>
-                    </p>
+                    <div class="notification-item__content">
+                      <p class="notification-item__text">
+                        <strong>{{ invite.inviter?.username }}</strong> invited you to join
+                      </p>
+                      <p class="notification-item__room">
+                        🏠 <strong>{{ invite.room?.name }}</strong>
+                      </p>
+                      <p class="notification-item__match">
+                        {{ invite.room?.team_home }} vs {{ invite.room?.team_away }}
+                      </p>
+                      <p class="notification-item__details">
+                        Entry: {{ invite.room?.entry_fee }} points • {{ formatDate(invite.room?.match_date) }}
+                      </p>
+                    </div>
                     <div class="notification-item__actions">
                       <button
                         @click="acceptRoomInvite(invite.id)"
-                        class="btn btn--primary"
+                        class="btn btn--primary btn--small"
                         :disabled="processing"
                       >
-                        Accept
+                        Join Room
                       </button>
                       <button
                         @click="declineRoomInvite(invite.id)"
-                        class="btn btn--secondary"
+                        class="btn btn--secondary btn--small"
                         :disabled="processing"
                       >
                         Decline
@@ -78,7 +63,7 @@
                   </div>
                 </div>
 
-                <div v-if="friendRequests.length === 0 && roomInvites.length === 0" class="notification-empty">
+                <div v-if="roomInvites.length === 0" class="notification-empty">
                   <p>No notifications</p>
                 </div>
               </div>
@@ -110,8 +95,7 @@
 
 <script setup lang="ts">
 const { user, signOut } = useAuth()
-const { friendRequests, roomInvites, notificationCount, fetchNotifications } = useNotifications()
-const { acceptFriendRequest: acceptFriendRequestAPI, declineFriendRequest: declineFriendRequestAPI } = useFriends()
+const { roomInvites, notificationCount, fetchNotifications } = useNotifications()
 const { acceptRoomInvite: acceptRoomInviteAPI, declineRoomInvite: declineRoomInviteAPI } = useInvites()
 const router = useRouter()
 
@@ -123,35 +107,16 @@ const handleSignOut = async () => {
   router.push('/login')
 }
 
-const acceptFriendRequest = async (id: string) => {
-  processing.value = true
-  try {
-    await acceptFriendRequestAPI(id)
-    await fetchNotifications()
-  } catch (error) {
-    console.error('Failed to accept friend request:', error)
-  } finally {
-    processing.value = false
-  }
-}
-
-const declineFriendRequest = async (id: string) => {
-  processing.value = true
-  try {
-    await declineFriendRequestAPI(id)
-    await fetchNotifications()
-  } catch (error) {
-    console.error('Failed to decline friend request:', error)
-  } finally {
-    processing.value = false
-  }
-}
-
 const acceptRoomInvite = async (id: string) => {
   processing.value = true
   try {
-    await acceptRoomInviteAPI(id)
+    const result = await acceptRoomInviteAPI(id)
     await fetchNotifications()
+    
+    // Redirect to the room if successful
+    if (result && result.room_id) {
+      await router.push(`/rooms/${result.room_id}`)
+    }
   } catch (error) {
     console.error('Failed to accept room invite:', error)
   } finally {
@@ -171,11 +136,23 @@ const declineRoomInvite = async (id: string) => {
   }
 }
 
+const formatDate = (dateString: string) => {
+  if (!dateString) return ''
+  return new Date(dateString).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 // Close notifications when clicking outside
 onMounted(async () => {
-  document.addEventListener('click', () => {
+  document.addEventListener('click', async () => {
     showNotifications.value = false
+    await fetchNotifications()
   })
+
   
   // Ensure user profile is loaded if user exists
   if (user.value) {
@@ -314,7 +291,7 @@ onMounted(async () => {
 }
 
 .notification-item {
-  padding: 12px 16px;
+  padding: 16px;
   border-bottom: 1px solid #e5e7eb;
   transition: background-color 0.2s;
 }
@@ -327,15 +304,42 @@ onMounted(async () => {
   border-bottom: none;
 }
 
+.notification-item__content {
+  margin-bottom: 12px;
+}
+
 .notification-item__text {
-  font-size: 13px;
+  font-size: 14px;
   color: #374151;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.notification-item__room {
+  font-size: 15px;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.notification-item__match {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.notification-item__details {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-bottom: 0;
 }
 
 .notification-item__actions {
   display: flex;
   gap: 8px;
+}
+
+.btn--small {
+  padding: 6px 12px;
+  font-size: 12px;
 }
 
 .notification-empty {

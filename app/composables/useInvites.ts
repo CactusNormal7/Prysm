@@ -50,14 +50,13 @@ export const useInvites = () => {
   const getRoomInvites = async () => {
     if (!user.value) throw new Error('User not authenticated')
 
-    const { data, error } = await $fetch('/api/invites/list', {
+    const response = await $fetch<any[]>('/api/invites/list', {
       query: {
         user_id: user.value.id
       }
     })
 
-    if (error) throw error
-    return data
+    return response
   }
 
   return {

@@ -1,28 +1,27 @@
 export const useNotifications = () => {
   const { user } = useAuth()
-  const { getFriendRequests } = useFriends()
   const { getRoomInvites } = useInvites()
 
-  const friendRequests = ref<any[]>([])
   const roomInvites = ref<any[]>([])
   const roomResults = ref<any[]>([])
   const loading = ref(false)
 
   const notificationCount = computed(() => {
-    return friendRequests.value.length + roomInvites.value.length + roomResults.value.length
+    return roomInvites.value.length + roomResults.value.length
   })
-
+  
   const fetchNotifications = async () => {
-    if (!user.value) return
-    
+    console.log('Fetching notifications')
+    if (!user.value) {
+      console.log('No user, skipping notifications fetch')
+      return
+    }
+
     loading.value = true
     try {
-      const [friendData, inviteData] = await Promise.all([
-        getFriendRequests(),
-        getRoomInvites()
-      ])
-      
-      friendRequests.value = friendData.received || []
+      console.log('Fetching notifications for user:', user.value.id)
+      const inviteData = await getRoomInvites()
+      console.log('Received invite data:', inviteData)
       roomInvites.value = inviteData || []
     } catch (error) {
       console.error('Failed to fetch notifications:', error)
@@ -40,7 +39,6 @@ export const useNotifications = () => {
   }
 
   return {
-    friendRequests,
     roomInvites,
     roomResults,
     notificationCount,
