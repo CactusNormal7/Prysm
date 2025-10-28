@@ -19,7 +19,7 @@
       </div>
       <div class="stats__grid">
         <div class="stats__item">
-          <div class="stats__value">{{ user.total_points || 100 }}</div>
+          <div class="stats__value">{{ user.total_points }}</div>
           <div class="stats__label">Total Points</div>
         </div>
         <div class="stats__item">
@@ -90,7 +90,7 @@ const formatDate = (dateString: string) => {
 }
 
 const getStatusClass = (status: string) => {
-  const classes = {
+  const classes: { [key: string]: string } = {
     open: 'room__status--open',
     locked: 'room__status--locked',
     finished: 'room__status--finished'

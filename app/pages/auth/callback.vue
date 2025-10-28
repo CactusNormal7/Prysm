@@ -13,7 +13,7 @@ definePageMeta({
 
 const supabase = useSupabaseClient()
 const router = useRouter()
-const { user } = useAuth()
+const { user, fetchUserProfile } = useAuth()
 
 const verifying = ref(true)
 
@@ -33,6 +33,9 @@ onMounted(async () => {
       console.log('Session established successfully')
       // Update the user state
       user.value = data.session.user
+      
+      // Fetch user profile
+      await fetchUserProfile()
       
       // Navigate to home
       router.push('/')

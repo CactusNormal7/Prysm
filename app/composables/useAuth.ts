@@ -3,6 +3,27 @@ export const useAuth = () => {
   const user = useState<any>('supabase_user', () => null)
   const session = useState<any>('supabase_session', () => null)
 
+  const fetchUserProfile = async () => {
+    if (!user.value) return null
+
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.value.id)
+        .single()
+
+      if (error) throw error
+
+      // Merge profile data with auth user
+      user.value = { ...user.value, ...data }
+      return data
+    } catch (err) {
+      console.error('Error fetching user profile:', err)
+      return null
+    }
+  }
+
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -13,6 +34,10 @@ export const useAuth = () => {
     
     user.value = data.user
     session.value = data.session
+    
+    // Fetch user profile after sign in
+    await fetchUserProfile()
+    
     return data
   }
 
@@ -31,6 +56,9 @@ export const useAuth = () => {
     
     user.value = data.user
     session.value = data.session
+    
+    await fetchUserProfile()
+    
     return data
   }
 
@@ -61,7 +89,8 @@ export const useAuth = () => {
     signIn,
     signUp,
     signOut,
-    signInWithMagicLink
+    signInWithMagicLink,
+    fetchUserProfile
   }
 }
 
