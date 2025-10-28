@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted } from 'vue'
+import { onBeforeUnmount } from 'vue'
 import { useSupabaseClient } from './useSupabase'
 
 export const useRealtime = () => {
@@ -107,20 +107,6 @@ export const useRealtime = () => {
     activeChannels.forEach(ch => supabase.removeChannel(ch))
     activeChannels.length = 0
   })
-
-  if (process.client) {
-    onMounted(() => {
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-          activeChannels.forEach(ch => {
-            if (!ch.isJoined()) {
-              ch.subscribe() 
-            }
-          })
-        }
-      })
-    })
-  }
 
   return {
     subscribeToRoomUpdates,

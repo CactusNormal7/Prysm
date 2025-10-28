@@ -119,34 +119,34 @@ export default defineNuxtPlugin({
     // Handle page visibility changes to refresh session when tab becomes visible
     if (typeof document !== 'undefined') {
       let isRefreshing = false
-      document.addEventListener('visibilitychange', async () => {
+      
+      const handleVisibilityChange = async () => {
         if (!document.hidden && session.value && !isRefreshing) {
           isRefreshing = true
           try {
-            // Refresh session silently
-            const { data, error } = await $supabase.auth.refreshSession()
-            if (!error && data.session) {
-              session.value = data.session
-              // Optionally refetch user profile to get latest data
-              const currentUser = user.value as any
-              if (currentUser?.id) {
-                await fetchUserProfile(currentUser.id)
+            // Check if session is still valid without forcing a refresh
+            const { data: { session: currentSession } } = await $supabase.auth.getSession()
+            if (currentSession) {
+              session.value = currentSession
+              user.value = currentSession.user
+            } else {
+              // Session expired while tab was hidden
+              console.log('Session expired while tab was hidden')
+              user.value = null
+              session.value = null
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('prysm_user_profile')
               }
             }
           } catch (err) {
-            console.error('Error refreshing session:', err)
-            // If session refresh fails, check if session is still valid
-            const { data: { session: currentSession } } = await $supabase.auth.getSession()
-            if (!currentSession) {
-              console.log('Session lost after refresh, signing out')
-              user.value = null
-              session.value = null
-            }
+            console.error('Error checking session:', err)
           } finally {
             isRefreshing = false
           }
         }
-      })
+      }
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange)
     }
   } catch (error) {
     console.error('Error initializing Supabase auth:', error)

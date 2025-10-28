@@ -302,8 +302,7 @@ const handleUpdateScore = async () => {
       method: 'PATCH',
       body: {
         result_home: score.value.home,
-        result_away: score.value.away,
-        user_id: user.value.id
+        result_away: score.value.away
       }
     })
     
