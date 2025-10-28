@@ -114,6 +114,33 @@ onMounted(async () => {
     if (!error && data) {
       activeRooms.value = data
     }
+    
+    // Subscribe to user points updates for real-time updates
+    if (user.value?.id) {
+      const userChannel = supabase
+        .channel(`user-points-home-${user.value.id}`)
+        .on(
+          'postgres_changes',
+          { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'users', 
+            filter: `id=eq.${user.value.id}` 
+          },
+          (payload) => {
+            // Update user points in real-time
+            if (payload.new.total_points !== undefined) {
+              user.value = { ...user.value, total_points: payload.new.total_points }
+            }
+          }
+        )
+        .subscribe()
+      
+      // Store channel for cleanup
+      onUnmounted(() => {
+        supabase.removeChannel(userChannel)
+      })
+    }
   } catch (err: any) {
     console.error('Database error:', err)
     configError.value = true

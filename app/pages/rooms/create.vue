@@ -48,35 +48,44 @@
           </select>
         </div>
 
-        <!-- Friend Selection for Private Rooms -->
+        <!-- User Invitation for Private Rooms -->
         <div v-if="form.type === 'private'" class="form__group">
-          <label class="form__label">Invite Friends</label>
-          <div class="friends-selector">
-            <div v-if="friends.length === 0" class="friends-selector__empty">
-              <p>No friends yet. <NuxtLink to="/friends">Add some friends</NuxtLink> to invite them to private rooms.</p>
-            </div>
-            <div v-else class="friends-selector__list">
+          <label for="invite_username" class="form__label">Invite User</label>
+          <div class="invite-section">
+            <input
+              id="invite_username"
+              v-model="inviteUsername"
+              type="text"
+              class="form__input"
+              placeholder="Enter exact username to invite"
+            />
+            <button
+              type="button"
+              @click="addInvite"
+              :disabled="!inviteUsername.trim() || loadingInvite"
+              class="btn btn--secondary btn--small"
+            >
+              {{ loadingInvite ? 'Adding...' : 'Add Invite' }}
+            </button>
+          </div>
+          
+          <!-- Invited Users List -->
+          <div v-if="invitedUsers.length > 0" class="invited-users">
+            <h4 class="invited-users__title">Invited Users:</h4>
+            <div class="invited-users__list">
               <div
-                v-for="friend in friends"
-                :key="friend.id"
-                class="friend-option"
-                :class="{ 'friend-option--selected': selectedFriends.includes(friend.id) }"
-                @click="toggleFriend(friend.id)"
+                v-for="user in invitedUsers"
+                :key="user.id"
+                class="invited-user"
               >
-                <div class="friend-option__avatar">
-                  {{ friend.username.charAt(0).toUpperCase() }}
-                </div>
-                <div class="friend-option__info">
-                  <div class="friend-option__name">{{ friend.username }}</div>
-                  <div class="friend-option__points">{{ friend.total_points || 0 }} pts</div>
-                </div>
-                <div class="friend-option__checkbox">
-                  <input
-                    type="checkbox"
-                    :checked="selectedFriends.includes(friend.id)"
-                    @change="toggleFriend(friend.id)"
-                  />
-                </div>
+                <span class="invited-user__name">{{ user.username }}</span>
+                <button
+                  type="button"
+                  @click="removeInvite(user.id)"
+                  class="btn btn--danger btn--small"
+                >
+                  Remove
+                </button>
               </div>
             </div>
           </div>
@@ -159,14 +168,14 @@ definePageMeta({
 })
 
 const { createRoom } = useRooms()
-const { getFriends } = useFriends()
 const { sendRoomInvite } = useInvites()
 const router = useRouter()
 
 const loading = ref(false)
+const loadingInvite = ref(false)
 const error = ref('')
-const friends = ref<any[]>([])
-const selectedFriends = ref<string[]>([])
+const inviteUsername = ref('')
+const invitedUsers = ref<any[]>([])
 
 const form = ref({
   name: '',
@@ -178,22 +187,50 @@ const form = ref({
   match_date: ''
 })
 
-const toggleFriend = (friendId: string) => {
-  const index = selectedFriends.value.indexOf(friendId)
-  if (index > -1) {
-    selectedFriends.value.splice(index, 1)
-  } else {
-    selectedFriends.value.push(friendId)
+const addInvite = async () => {
+  const username = inviteUsername.value.trim()
+  if (!username) return
+
+  loadingInvite.value = true
+  try {
+    // Search for user by exact username
+    const response = await $fetch('/api/friends/search', {
+      query: {
+        q: username,
+        user_id: useAuth().user.value?.id
+      }
+    })
+
+    const users = response.users || []
+    if (users.length === 0) {
+      error.value = `User "${username}" not found`
+      return
+    }
+
+    const user = users.find((u: any) => u.username === username)
+    if (!user) {
+      error.value = `User "${username}" not found`
+      return
+    }
+
+    // Check if already invited
+    if (invitedUsers.value.some(u => u.id === user.id)) {
+      error.value = `User "${username}" already invited`
+      return
+    }
+
+    invitedUsers.value.push(user)
+    inviteUsername.value = ''
+    error.value = ''
+  } catch (err: any) {
+    error.value = err.message || 'Failed to find user'
+  } finally {
+    loadingInvite.value = false
   }
 }
 
-const fetchFriends = async () => {
-  try {
-    const friendsData = await getFriends()
-    friends.value = friendsData || []
-  } catch (err) {
-    console.error('Failed to fetch friends:', err)
-  }
+const removeInvite = (userId: string) => {
+  invitedUsers.value = invitedUsers.value.filter(u => u.id !== userId)
 }
 
 const handleSubmit = async () => {
@@ -210,12 +247,12 @@ const handleSubmit = async () => {
 
     const room = await createRoom(roomData)
     
-    // Send invites to selected friends for private rooms
-    if (form.value.type === 'private' && selectedFriends.value.length > 0) {
+    // Send invites to invited users for private rooms
+    if (form.value.type === 'private' && invitedUsers.value.length > 0) {
       try {
         await Promise.all(
-          selectedFriends.value.map(friendId => 
-            sendRoomInvite(room.id, friendId)
+          invitedUsers.value.map(user => 
+            sendRoomInvite(room.id, user.id)
           )
         )
       } catch (inviteErr) {
@@ -232,82 +269,69 @@ const handleSubmit = async () => {
   }
 }
 
-onMounted(() => {
-  fetchFriends()
-})
+// No need to fetch friends anymore
 </script>
 
 <style scoped>
-.friends-selector {
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 12px;
-  background: var(--light-gray);
-}
-
-.friends-selector__empty {
-  text-align: center;
-  color: var(--gray-500);
-  font-size: 14px;
-}
-
-.friends-selector__list {
+.invite-section {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.friend-option {
-  display: flex;
-  align-items: center;
   gap: 12px;
-  padding: 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  align-items: flex-end;
 }
 
-.friend-option:hover {
-  background-color: var(--white);
-}
-
-.friend-option--selected {
-  background-color: var(--white);
-  border: 1px solid var(--primary-color);
-}
-
-.friend-option__avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: var(--primary-color);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.friend-option__info {
+.invite-section .form__input {
   flex: 1;
 }
 
-.friend-option__name {
-  font-weight: 500;
-  color: var(--gray-900);
+.btn--small {
+  padding: 8px 16px;
   font-size: 14px;
 }
 
-.friend-option__points {
-  font-size: 12px;
-  color: var(--gray-500);
+.btn--danger {
+  background-color: #dc2626;
+  color: white;
+  border: none;
 }
 
-.friend-option__checkbox {
-  margin-left: auto;
+.btn--danger:hover {
+  background-color: #b91c1c;
+}
+
+.invited-users {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.invited-users__title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #374151;
+}
+
+.invited-users__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invited-user {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+.invited-user__name {
+  font-weight: 500;
+  color: #111827;
 }
 </style>
 

@@ -8,7 +8,6 @@
         <div class="nav__links">
           <NuxtLink to="/">Home</NuxtLink>
           <NuxtLink to="/rooms">Rooms</NuxtLink>
-          <NuxtLink to="/friends">Friends</NuxtLink>
           <NuxtLink to="/leaderboard">Leaderboard</NuxtLink>
         </div>
         <div class="nav__user">
@@ -195,6 +194,36 @@ onMounted(async () => {
           if (profileData) {
             user.value = { ...user.value, ...profileData }
           }
+        }
+      }
+      
+      // Subscribe to user points updates for real-time updates
+      if (user.value.id) {
+        const supabase = useNuxtApp().$supabase
+        if (supabase) {
+          const userChannel = supabase
+            .channel(`user-points-${user.value.id}`)
+            .on(
+              'postgres_changes',
+              { 
+                event: 'UPDATE', 
+                schema: 'public', 
+                table: 'users', 
+                filter: `id=eq.${user.value.id}` 
+              },
+              (payload) => {
+                // Update user points in real-time
+                if (payload.new.total_points !== undefined) {
+                  user.value = { ...user.value, total_points: payload.new.total_points }
+                }
+              }
+            )
+            .subscribe()
+          
+          // Store channel for cleanup
+          onUnmounted(() => {
+            supabase.removeChannel(userChannel)
+          })
         }
       }
     } catch (error) {

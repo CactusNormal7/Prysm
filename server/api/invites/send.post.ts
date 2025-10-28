@@ -41,12 +41,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if (room.type !== 'private') {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Can only invite friends to private rooms'
-    })
-  }
+  // Allow invites for both public and private rooms
 
   if (room.creator_id !== inviter_id) {
     throw createError({

@@ -109,6 +109,47 @@
         </p>
       </div>
 
+      <!-- Invite Users (for creator) -->
+      <div v-if="isCreator && room.status === 'open'" class="card">
+        <div class="card__header">
+          <h2 class="card__title">Invite Users</h2>
+        </div>
+        
+        <div class="invite-section">
+          <input
+            v-model="inviteUsername"
+            type="text"
+            class="form__input"
+            placeholder="Enter username to invite"
+          />
+          <button
+            @click="sendInvite"
+            :disabled="!inviteUsername.trim() || inviteLoading"
+            class="btn btn--primary"
+          >
+            {{ inviteLoading ? 'Sending...' : 'Send Invite' }}
+          </button>
+        </div>
+
+        <div v-if="inviteError" class="form__error">{{ inviteError }}</div>
+        <div v-if="inviteSuccess" class="form__success">{{ inviteSuccess }}</div>
+
+        <!-- Invited Users List -->
+        <div v-if="invitedUsers.length > 0" class="invited-users">
+          <h4 class="invited-users__title">Invited Users:</h4>
+          <div class="invited-users__list">
+            <div
+              v-for="invite in invitedUsers"
+              :key="invite.id"
+              class="invited-user"
+            >
+              <span class="invited-user__name">{{ invite.invitee?.username }}</span>
+              <span class="invited-user__status">{{ invite.status }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Score Update (for creator) -->
       <div v-if="isCreator && room.status !== 'finished'" class="card">
         <div class="card__header">
@@ -220,6 +261,7 @@ const route = useRoute()
 const router = useRouter()
 const { user } = useAuth()
 const { getRoom, getRoomParticipants, joinRoom } = useRooms()
+const { sendRoomInvite } = useInvites()
 const { subscribeToRoomUpdates, subscribeToScoreUpdates, unsubscribe } = useRealtime()
 const supabase = useNuxtApp().$supabase
 
@@ -244,6 +286,13 @@ const closeError = ref('')
 
 const userPoints = ref(100)
 const realtimeChannel = ref<any>(null)
+
+// Invite system
+const inviteUsername = ref('')
+const inviteLoading = ref(false)
+const inviteError = ref('')
+const inviteSuccess = ref('')
+const invitedUsers = ref<any[]>([])
 
 const sortedParticipants = computed(() => {
   return [...participants.value].sort((a, b) => {
@@ -358,6 +407,86 @@ const handleCloseMatch = async () => {
   }
 }
 
+const sendInvite = async () => {
+  const username = inviteUsername.value.trim()
+  if (!username || !user.value) return
+
+  inviteLoading.value = true
+  inviteError.value = ''
+  inviteSuccess.value = ''
+
+  try {
+    // Search for user by exact username
+    const response = await $fetch('/api/friends/search', {
+      query: {
+        q: username,
+        user_id: user.value.id
+      }
+    })
+
+    const users = response.users || []
+    if (users.length === 0) {
+      inviteError.value = `User "${username}" not found`
+      return
+    }
+
+    const targetUser = users.find((u: any) => u.username === username)
+    if (!targetUser) {
+      inviteError.value = `User "${username}" not found`
+      return
+    }
+
+    // Check if user is already a participant
+    const isAlreadyParticipant = participants.value.some(p => p.user_id === targetUser.id)
+    if (isAlreadyParticipant) {
+      inviteError.value = `User "${username}" is already a participant`
+      return
+    }
+
+    // Check if user is already invited
+    const isAlreadyInvited = invitedUsers.value.some(invite => invite.invitee_id === targetUser.id)
+    if (isAlreadyInvited) {
+      inviteError.value = `User "${username}" has already been invited`
+      return
+    }
+
+    // Send the invite
+    await sendRoomInvite(roomId, targetUser.id)
+    
+    inviteSuccess.value = `Invitation sent to ${username}`
+    inviteUsername.value = ''
+    
+    // Refresh invited users list
+    await fetchInvitedUsers()
+  } catch (err: any) {
+    inviteError.value = err.data?.statusMessage || err.message || 'Failed to send invitation'
+  } finally {
+    inviteLoading.value = false
+  }
+}
+
+const fetchInvitedUsers = async () => {
+  if (!user.value) return
+
+  try {
+    const { data } = await supabase
+      .from('room_invites')
+      .select(`
+        *,
+        invitee:invitee_id (
+          id,
+          username
+        )
+      `)
+      .eq('room_id', roomId)
+      .eq('inviter_id', user.value.id)
+
+    invitedUsers.value = data || []
+  } catch (error) {
+    console.error('Failed to fetch invited users:', error)
+  }
+}
+
 const fetchRoom = async () => {
   try {
     room.value = await getRoom(roomId)
@@ -414,7 +543,8 @@ onMounted(async () => {
   await Promise.all([
     fetchRoom(),
     fetchParticipants(),
-    fetchUserPoints()
+    fetchUserPoints(),
+    fetchInvitedUsers()
   ])
   
   // Subscribe to real-time updates
@@ -476,4 +606,84 @@ onUnmounted(() => {
   }
 })
 </script>
+
+<style scoped>
+.invite-section {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+
+.invite-section .form__input {
+  flex: 1;
+}
+
+.form__success {
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.invited-users {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.invited-users__title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #374151;
+}
+
+.invited-users__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invited-user {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+.invited-user__name {
+  font-weight: 500;
+  color: #111827;
+}
+
+.invited-user__status {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.invited-user__status.pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.invited-user__status.accepted {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.invited-user__status.declined {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+</style>
 
