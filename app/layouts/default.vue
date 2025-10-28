@@ -11,8 +11,11 @@
           <NuxtLink to="/leaderboard">Leaderboard</NuxtLink>
         </div>
         <div class="nav__user">
-          <NuxtLink v-if="user" to="/profile" class="btn btn--link">
-            <span class="user-points">{{ user.total_points || 100 }} pts</span>
+          <NuxtLink v-if="user && user.total_points !== undefined" to="/profile" class="btn btn--link">
+            <span class="user-points">{{ user.total_points }} pts</span>
+          </NuxtLink>
+          <NuxtLink v-else-if="user" to="/profile" class="btn btn--link">
+            <span class="user-points">Loading...</span>
           </NuxtLink>
           <NuxtLink v-else to="/login" class="btn btn--secondary">
             Sign in

@@ -1,10 +1,11 @@
 export const useAuth = () => {
-  const supabase = useSupabaseClient()
+  const nuxtApp = useNuxtApp()
+  const supabase = nuxtApp.$supabase || null
   const user = useState<any>('supabase_user', () => null)
   const session = useState<any>('supabase_session', () => null)
 
   const fetchUserProfile = async () => {
-    if (!user.value) return null
+    if (!user.value || !supabase) return null
 
     try {
       const { data, error } = await supabase
@@ -25,6 +26,8 @@ export const useAuth = () => {
   }
 
   const signIn = async (email: string, password: string) => {
+    if (!supabase) throw new Error('Supabase client is not initialized')
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -32,16 +35,20 @@ export const useAuth = () => {
     
     if (error) throw error
     
-    user.value = data.user
-    session.value = data.session
-    
-    // Fetch user profile after sign in
-    await fetchUserProfile()
+    if (data.session) {
+      user.value = data.session.user
+      session.value = data.session
+      
+      // Fetch user profile after sign in
+      await fetchUserProfile()
+    }
     
     return data
   }
 
   const signUp = async (email: string, password: string) => {
+    if (!supabase) throw new Error('Supabase client is not initialized')
+    
     const emailRedirectTo = import.meta.client ? `${window.location.origin}/auth/callback` : ''
     
     const { data, error } = await supabase.auth.signUp({
@@ -54,15 +61,22 @@ export const useAuth = () => {
     
     if (error) throw error
     
-    user.value = data.user
-    session.value = data.session
-    
-    await fetchUserProfile()
+    if (data.session) {
+      user.value = data.session.user
+      session.value = data.session
+      
+      await fetchUserProfile()
+    } else if (data.user) {
+      // User created but needs to confirm email
+      user.value = data.user
+    }
     
     return data
   }
 
   const signOut = async () => {
+    if (!supabase) throw new Error('Supabase client is not initialized')
+    
     const { error } = await supabase.auth.signOut()
     
     if (error) throw error
@@ -72,6 +86,8 @@ export const useAuth = () => {
   }
 
   const signInWithMagicLink = async (email: string) => {
+    if (!supabase) throw new Error('Supabase client is not initialized')
+    
     const { data, error } = await supabase.auth.signInWithOtp({
       email,
       options: {
@@ -83,6 +99,27 @@ export const useAuth = () => {
     return data
   }
 
+  const refreshSession = async () => {
+    if (!supabase) return null
+    
+    try {
+      const { data: { session: newSession }, error } = await supabase.auth.refreshSession()
+      
+      if (error) throw error
+      
+      if (newSession) {
+        session.value = newSession
+        user.value = newSession.user
+        await fetchUserProfile()
+      }
+      
+      return newSession
+    } catch (err) {
+      console.error('Error refreshing session:', err)
+      return null
+    }
+  }
+
   return {
     user,
     session,
@@ -90,7 +127,8 @@ export const useAuth = () => {
     signUp,
     signOut,
     signInWithMagicLink,
-    fetchUserProfile
+    fetchUserProfile,
+    refreshSession
   }
 }
 

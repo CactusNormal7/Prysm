@@ -2,6 +2,10 @@ export const useRooms = () => {
   const supabase = useSupabaseClient()
   const { user } = useAuth()
 
+  if (!supabase) {
+    throw new Error('Supabase client is not initialized')
+  }
+
   const createRoom = async (roomData: any) => {
     if (!user.value) throw new Error('User not authenticated')
 
