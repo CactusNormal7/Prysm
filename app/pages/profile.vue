@@ -36,14 +36,14 @@
         </div>
       </div>
 
-      <div class="card">
+      <!-- <div class="card">
         <div class="card__header">
           <h2 class="card__title">Recent Activity</h2>
         </div>
         <div class="coming-soon">
           <p>Activity history coming soon...</p>
         </div>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>

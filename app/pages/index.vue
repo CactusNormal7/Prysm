@@ -25,10 +25,10 @@
           <div class="stats__value">{{ user.total_points }}</div>
           <div class="stats__label">Total Points</div>
         </div>
-        <div class="stats__item">
+        <!-- <div class="stats__item">
           <div class="stats__value">{{ userStats.roomsJoined }}</div>
           <div class="stats__label">Rooms Joined</div>
-        </div>
+        </div> -->
         <div class="stats__item">
           <div class="stats__value">{{ userStats.winRate }}%</div>
           <div class="stats__label">Win Rate</div>

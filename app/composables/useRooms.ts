@@ -219,13 +219,29 @@ export const useRooms = () => {
     return -bet
   }
 
+  const banParticipant = async (participantId: string) => {
+    if (!user.value) throw new Error('User not authenticated')
+
+    const { data, error } = await $fetch('/api/rooms/ban-participant', {
+      method: 'DELETE',
+      query: {
+        participant_id: participantId,
+        user_id: user.value.id
+      }
+    })
+
+    if (error) throw error
+    return data
+  }
+
   return {
     createRoom,
     joinRoom,
     submitRoomResult,
     getRoom,
     getRoomParticipants,
-    getRooms
+    getRooms,
+    banParticipant
   }
 }
 

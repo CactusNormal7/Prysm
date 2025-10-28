@@ -143,6 +143,8 @@
 
         <div v-if="inviteError" class="form__error">{{ inviteError }}</div>
         <div v-if="inviteSuccess" class="form__success">{{ inviteSuccess }}</div>
+        <div v-if="banError" class="form__error">{{ banError }}</div>
+        <div v-if="banSuccess" class="form__success">{{ banSuccess }}</div>
 
         <!-- Invited Users List -->
         <div v-if="invitedUsers.length > 0" class="invited-users">
@@ -154,7 +156,17 @@
               class="invited-user"
             >
               <span class="invited-user__name">{{ invite.invitee?.username }}</span>
-              <span class="invited-user__status">{{ invite.status }}</span>
+              <div class="invited-user__actions">
+                <span class="invited-user__status">{{ invite.status }}</span>
+                <button
+                  v-if="invite.status === 'pending'"
+                  @click="deleteInvite(invite.id)"
+                  class="btn btn--small btn--danger"
+                  title="Delete invitation"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -242,6 +254,7 @@
                 <th>Prediction</th>
                 <th>Bet</th>
                 <th v-if="room.status === 'finished'">Points</th>
+                <th v-if="isCreator && room.status !== 'finished'">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -252,6 +265,16 @@
                 <td>{{ participant.points_bet }}</td>
                 <td v-if="room.status === 'finished'" :class="participant.points_earned >= 0 ? 'points-positive' : 'points-negative'">
                   {{ participant.points_earned > 0 ? '+' : '' }}{{ participant.points_earned }}
+                </td>
+                <td v-if="isCreator && room.status !== 'finished'" class="actions-cell">
+                  <button
+                    @click="banParticipantFromRoom(participant.id, participant.user?.username || participant.user?.email)"
+                    :disabled="banLoading === participant.id"
+                    class="btn btn--small btn--danger"
+                    title="Ban participant and refund points"
+                  >
+                    {{ banLoading === participant.id ? 'Banning...' : 'Ban' }}
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -270,8 +293,8 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const { user } = useAuth()
-const { getRoom, getRoomParticipants, joinRoom } = useRooms()
-const { sendRoomInvite } = useInvites()
+const { getRoom, getRoomParticipants, joinRoom, banParticipant } = useRooms()
+const { sendRoomInvite, deleteRoomInvite } = useInvites()
 const { subscribeToRoomUpdates, subscribeToScoreUpdates, unsubscribe } = useRealtime()
 const supabase = useNuxtApp().$supabase
 
@@ -304,6 +327,11 @@ const inviteLoading = ref(false)
 const inviteError = ref('')
 const inviteSuccess = ref('')
 const invitedUsers = ref<any[]>([])
+
+// Ban participant functionality
+const banLoading = ref<string | null>(null)
+const banError = ref('')
+const banSuccess = ref('')
 
 const sortedParticipants = computed(() => {
   return [...participants.value].sort((a, b) => {
@@ -473,6 +501,44 @@ const sendInvite = async () => {
     inviteError.value = err.data?.statusMessage || err.message || 'Failed to send invitation'
   } finally {
     inviteLoading.value = false
+  }
+}
+
+const deleteInvite = async (inviteId: string) => {
+  if (!user.value) return
+
+  try {
+    await deleteRoomInvite(inviteId)
+    inviteSuccess.value = 'Invitation deleted successfully'
+    inviteError.value = ''
+    
+    // Refresh invited users list
+    await fetchInvitedUsers()
+  } catch (err: any) {
+    inviteError.value = err.data?.statusMessage || err.message || 'Failed to delete invitation'
+  }
+}
+
+const banParticipantFromRoom = async (participantId: string, participantName: string) => {
+  if (!user.value) return
+
+  banLoading.value = participantId
+  banError.value = ''
+  banSuccess.value = ''
+
+  try {
+    const result = await banParticipant(participantId)
+    banSuccess.value = `${participantName} has been banned and their points refunded`
+    banError.value = ''
+    
+    // Refresh participants list
+    await fetchParticipants()
+    // Refresh user points
+    await fetchUserPoints()
+  } catch (err: any) {
+    banError.value = err.data?.statusMessage || err.message || 'Failed to ban participant'
+  } finally {
+    banLoading.value = null
   }
 }
 
@@ -690,6 +756,12 @@ onUnmounted(() => {
   border: 1px solid #e5e7eb;
 }
 
+.invited-user__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .invited-user__name {
   font-weight: 500;
   color: #111827;
@@ -733,6 +805,34 @@ onUnmounted(() => {
   border-radius: 6px;
   margin: 0;
   font-size: 14px;
+}
+
+.actions-cell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.btn--small {
+  padding: 4px 8px;
+  font-size: 12px;
+  min-height: auto;
+}
+
+.btn--danger {
+  background-color: #dc2626;
+  color: white;
+  border: 1px solid #dc2626;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background-color: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.btn--danger:disabled {
+  background-color: #9ca3af;
+  border-color: #9ca3af;
+  cursor: not-allowed;
 }
 </style>
 

@@ -59,10 +59,26 @@ export const useInvites = () => {
     return response
   }
 
+  const deleteRoomInvite = async (inviteId: string) => {
+    if (!user.value) throw new Error('User not authenticated')
+
+    const { data, error } = await $fetch('/api/invites/delete', {
+      method: 'DELETE',
+      query: {
+        invite_id: inviteId,
+        user_id: user.value.id
+      }
+    })
+
+    if (error) throw error
+    return data
+  }
+
   return {
     sendRoomInvite,
     acceptRoomInvite,
     declineRoomInvite,
-    getRoomInvites
+    getRoomInvites,
+    deleteRoomInvite
   }
 }
