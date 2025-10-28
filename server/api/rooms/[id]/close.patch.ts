@@ -57,11 +57,19 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    if (!room.result_home || !room.result_away) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Match result must be set before closing'
-      })
+    // Set default score 0-0 if not set
+    if (room.result_home === null || room.result_away === null) {
+      await supabase
+        .from('rooms')
+        .update({
+          result_home: 0,
+          result_away: 0
+        })
+        .eq('id', roomId)
+      
+      // Update local room object
+      room.result_home = 0
+      room.result_away = 0
     }
 
     // Close the room
@@ -120,7 +128,8 @@ export default defineEventHandler(async (event) => {
         .eq('id', participant.id)
 
       // Update user's total points
-      const newTotal = (participant.user?.total_points || 0) + participant.points_earned
+      // Points were already deducted when joining, so we add back the bet amount + earnings
+      const newTotal = (participant.user?.total_points || 0) + participant.points_bet + participant.points_earned
       await supabase
         .from('users')
         .update({ total_points: newTotal })
@@ -158,6 +167,6 @@ function calculatePoints(prediction: { home: number, away: number }, result: { h
     return 30 * bet
   }
 
-  // Wrong prediction - lose bet
+  // Wrong prediction - lose bet (but not more than what was bet)
   return -bet
 }

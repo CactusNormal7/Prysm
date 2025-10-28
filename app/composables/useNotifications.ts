@@ -5,10 +5,11 @@ export const useNotifications = () => {
 
   const friendRequests = ref<any[]>([])
   const roomInvites = ref<any[]>([])
+  const roomResults = ref<any[]>([])
   const loading = ref(false)
 
   const notificationCount = computed(() => {
-    return friendRequests.value.length + roomInvites.value.length
+    return friendRequests.value.length + roomInvites.value.length + roomResults.value.length
   })
 
   const fetchNotifications = async () => {
@@ -30,11 +31,22 @@ export const useNotifications = () => {
     }
   }
 
+  const addRoomResultNotification = (roomResult: any) => {
+    roomResults.value.unshift(roomResult)
+  }
+
+  const clearRoomResultNotifications = () => {
+    roomResults.value = []
+  }
+
   return {
     friendRequests,
     roomInvites,
+    roomResults,
     notificationCount,
     loading,
-    fetchNotifications
+    fetchNotifications,
+    addRoomResultNotification,
+    clearRoomResultNotifications
   }
 }

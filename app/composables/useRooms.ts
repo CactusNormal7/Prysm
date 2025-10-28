@@ -121,12 +121,28 @@ export const useRooms = () => {
         .eq('id', participant.id)
 
       // Update user's total points
-      const newTotal = (participant.user?.total_points || 0) + participant.points_earned
+      // Points were already deducted when joining, so we add back the bet amount + earnings
+      const newTotal = (participant.user?.total_points || 0) + participant.points_bet + participant.points_earned
       await supabase
         .from('users')
         .update({ total_points: newTotal })
         .eq('id', participant.user_id)
     }
+
+    // Send notifications to all participants
+    const { addRoomResultNotification } = useNotifications()
+    participantsWithScores.forEach(participant => {
+      addRoomResultNotification({
+        roomId: roomId,
+        roomName: room.name,
+        result: result,
+        pointsEarned: participant.points_earned,
+        pointsBet: participant.points_bet,
+        rank: participant.rank,
+        totalParticipants: participantsWithScores.length,
+        timestamp: new Date().toISOString()
+      })
+    })
 
     return room
   }
@@ -156,7 +172,7 @@ export const useRooms = () => {
   const getRooms = async (filters?: { status?: string, type?: string }) => {
     let query = supabase
       .from('rooms')
-      .select('*')
+      .select('*, participants:room_participants(count)')
 
     if (filters?.status) {
       query = query.eq('status', filters.status)
@@ -169,7 +185,12 @@ export const useRooms = () => {
     const { data, error } = await query.order('created_at', { ascending: false })
 
     if (error) throw error
-    return data
+    
+    // Parse the count from the participants array
+    return data?.map((room: any) => ({
+      ...room,
+      participants: room.participants?.[0]?.count || 0
+    })) || []
   }
 
   const calculatePoints = (prediction: { home: number, away: number }, result: { home: number, away: number }, bet: number) => {
@@ -194,7 +215,7 @@ export const useRooms = () => {
       return 30 * bet
     }
 
-    // Wrong prediction - lose bet
+    // Wrong prediction - lose bet (but not more than what was bet)
     return -bet
   }
 

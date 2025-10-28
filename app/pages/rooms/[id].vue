@@ -148,14 +148,15 @@
         <div v-if="scoreLoading" class="form__info">Updating score...</div>
       </div>
 
-      <!-- Close Match (for creator) -->
-      <div v-if="isCreator && room.status !== 'finished' && room.result_home !== null && room.result_away !== null" class="card">
+      <!-- Close Match (for creator) - Always visible -->
+      <div v-if="isCreator && room.status !== 'finished'" class="card">
         <div class="card__header">
           <h2 class="card__title">Close Match</h2>
         </div>
         
         <p class="card__description">
           Once you close the match, points will be distributed to participants based on their predictions.
+          Current score: {{ score.home }} - {{ score.away }}
         </p>
 
         <div v-if="closeError" class="form__error">{{ closeError }}</div>
@@ -322,6 +323,24 @@ const handleCloseMatch = async () => {
   closeError.value = ''
 
   try {
+    // Ensure score is set (use current values or default to 0-0)
+    const finalScore = {
+      home: score.value.home ?? 0,
+      away: score.value.away ?? 0
+    }
+    
+    // First update the score if needed
+    if (room.value.result_home === null || room.value.result_away === null) {
+      await $fetch(`/api/rooms/${roomId}/score`, {
+        method: 'PATCH',
+        body: {
+          result_home: finalScore.home,
+          result_away: finalScore.away
+        }
+      })
+    }
+    
+    // Then close the match
     const response = await $fetch(`/api/rooms/${roomId}/close`, {
       method: 'PATCH',
       body: {
@@ -400,10 +419,14 @@ onMounted(async () => {
   
   // Subscribe to real-time updates
   if (room.value) {
-    realtimeChannel.value = subscribeToRoomUpdates(roomId, (payload) => {
+    realtimeChannel.value = subscribeToRoomUpdates(roomId, async (payload) => {
       if (payload.eventType === 'UPDATE') {
-        fetchRoom()
-        fetchParticipants()
+        await fetchRoom()
+        await fetchParticipants()
+        // Refresh user points when scores are updated
+        if (payload.new.status === 'finished') {
+          await fetchUserPoints()
+        }
       }
     })
 
@@ -419,8 +442,25 @@ onMounted(async () => {
       }
     })
     
-    // Store score channel for cleanup
-    realtimeChannel.value = [realtimeChannel.value, scoreChannel]
+    // Subscribe to participant updates
+    const participantsChannel = supabase
+      .channel(`room-participants-${roomId}`)
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'room_participants', 
+          filter: `room_id=eq.${roomId}` 
+        },
+        async () => {
+          await fetchParticipants()
+        }
+      )
+      .subscribe()
+    
+    // Store all channels for cleanup
+    realtimeChannel.value = [realtimeChannel.value, scoreChannel, participantsChannel]
   }
   
   loading.value = false

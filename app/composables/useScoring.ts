@@ -25,7 +25,7 @@ export const useScoring = () => {
       return 30 * pointsBet
     }
 
-    // Wrong prediction - lose bet
+    // Wrong prediction - lose bet (but not more than what was bet)
     return -pointsBet
   }
 

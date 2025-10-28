@@ -12,8 +12,11 @@
       </div>
     </div>
 
+    <!-- Room Results Notifications -->
+    <RoomResultsNotifications v-if="user" />
+
     <!-- User Stats -->
-    <div v-else class="card stats-card">
+    <div v-if="user" class="card stats-card">
       <div class="card__header">
         <h2 class="card__title">Your Stats</h2>
       </div>
