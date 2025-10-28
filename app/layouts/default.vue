@@ -1,5 +1,6 @@
 <template>
-  <div class="page-wrapper">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+      <div class="page-wrapper">
     <!-- Navigation -->
     <nav class="nav">
       <div class="nav__content">
@@ -14,7 +15,7 @@
           <!-- Notification Bell -->
           <div v-if="user" class="notifications-dropdown" @click.stop="showNotifications = !showNotifications">
             <button class="notification-bell">
-              🔔
+              <i class="fa-solid fa-bell"></i>
               <span v-if="notificationCount > 0" class="notification-badge">{{ notificationCount }}</span>
             </button>
             
