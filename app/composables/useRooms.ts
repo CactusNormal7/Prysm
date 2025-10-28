@@ -25,6 +25,18 @@ export const useRooms = () => {
   const joinRoom = async (roomId: string, prediction: { home: number, away: number }, pointsBet: number) => {
     if (!user.value) throw new Error('User not authenticated')
 
+    // Check if user is the creator of this room
+    const { data: roomData, error: roomError } = await supabase
+      .from('rooms')
+      .select('creator_id')
+      .eq('id', roomId)
+      .single()
+
+    if (roomError) throw new Error('Room not found')
+    if (roomData.creator_id === user.value.id) {
+      throw new Error('Room creators cannot join their own rooms')
+    }
+
     // Check if user has enough points
     const { data: userData, error: userError } = await supabase
       .from('users')

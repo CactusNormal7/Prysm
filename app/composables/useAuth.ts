@@ -25,6 +25,28 @@ export const useAuth = () => {
     }
   }
 
+  // Ensure user profile is loaded when accessing user
+  const ensureUserProfile = async () => {
+    if (!user.value || !supabase) return
+    // Check if profile data is already loaded (has total_points or other custom fields)
+    if (user.value.total_points !== undefined) return
+    await fetchUserProfile()
+  }
+
+  // Automatically fetch user profile when user is set (but only if profile data is missing)
+  watch(user, async (newUser) => {
+    if (newUser && supabase) {
+      await ensureUserProfile()
+    }
+  }, { immediate: false })
+
+  // Ensure profile is loaded on initial mount if user is already authenticated
+  onMounted(async () => {
+    if (user.value && supabase) {
+      await ensureUserProfile()
+    }
+  })
+
   const signIn = async (email: string, password: string) => {
     if (!supabase) throw new Error('Supabase client is not initialized')
     
@@ -38,9 +60,6 @@ export const useAuth = () => {
     if (data.session) {
       user.value = data.session.user
       session.value = data.session
-      
-      // Fetch user profile after sign in
-      await fetchUserProfile()
     }
     
     return data
@@ -64,8 +83,6 @@ export const useAuth = () => {
     if (data.session) {
       user.value = data.session.user
       session.value = data.session
-      
-      await fetchUserProfile()
     } else if (data.user) {
       // User created but needs to confirm email
       user.value = data.user
@@ -110,7 +127,6 @@ export const useAuth = () => {
       if (newSession) {
         session.value = newSession
         user.value = newSession.user
-        await fetchUserProfile()
       }
       
       return newSession

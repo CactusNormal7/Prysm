@@ -31,6 +31,15 @@
     }
   }
 
+  &--danger {
+    background-color: #dc2626;
+    color: white;
+
+    &:hover {
+      background-color: #b91c1c;
+    }
+  }
+
   &--full {
     width: 100%;
   }

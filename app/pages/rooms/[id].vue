@@ -24,6 +24,9 @@
         <div class="room-detail__info">
           <div class="room-detail__match">
             <h3 class="room__match">{{ room.team_home }} vs {{ room.team_away }}</h3>
+            <p v-if="room.result_home !== null && room.result_away !== null" class="room__score">
+              Score: {{ room.result_home }} - {{ room.result_away }}
+            </p>
             <p class="room__meta">Match Date: {{ formatDate(room.match_date) }}</p>
             <p class="room__meta">Deadline: {{ formatDate(room.deadline_date) }}</p>
           </div>
@@ -34,8 +37,8 @@
         </div>
       </div>
 
-      <!-- Prediction Form (if room is open and user hasn't joined) -->
-      <div v-if="room.status === 'open' && !hasJoined" class="card">
+      <!-- Prediction Form (if room is open and user hasn't joined and is not creator) -->
+      <div v-if="room.status === 'open' && !hasJoined && !isCreator" class="card">
         <div class="card__header">
           <h2 class="card__title">Make Your Prediction</h2>
         </div>
@@ -95,50 +98,75 @@
         </form>
       </div>
 
-      <!-- Results Submission (for creator) -->
-      <div v-if="isCreator && room.status !== 'finished' && hasParticipants" class="card">
+      <!-- Creator Info -->
+      <div v-if="isCreator && room.status === 'open'" class="card creator-info">
         <div class="card__header">
-          <h2 class="card__title">Submit Match Results</h2>
+          <h2 class="card__title">Room Creator</h2>
+        </div>
+        <p class="creator-message">
+          As the creator of this room, you cannot join as a participant. 
+          You can update the match score and manage the room.
+        </p>
+      </div>
+
+      <!-- Score Update (for creator) -->
+      <div v-if="isCreator && room.status !== 'finished'" class="card">
+        <div class="card__header">
+          <h2 class="card__title">Update Match Score</h2>
         </div>
         
-        <form @submit.prevent="handleSubmitResults">
-          <div class="teams-grid">
-            <div class="form__group">
-              <label :for="`result-${room.team_home}`" class="form__label">{{ room.team_home }}</label>
-              <input
-                :id="`result-${room.team_home}`"
-                v-model.number="result.home"
-                type="number"
-                min="0"
-                required
-                class="form__input"
-                placeholder="0"
-              />
-            </div>
-            <div class="form__group">
-              <label :for="`result-${room.team_away}`" class="form__label">{{ room.team_away }}</label>
-              <input
-                :id="`result-${room.team_away}`"
-                v-model.number="result.away"
-                type="number"
-                min="0"
-                required
-                class="form__input"
-                placeholder="0"
-              />
-            </div>
+        <div class="teams-grid">
+          <div class="form__group">
+            <label :for="`result-${room.team_home}`" class="form__label">{{ room.team_home }}</label>
+            <input
+              :id="`result-${room.team_home}`"
+              v-model.number="score.home"
+              type="number"
+              min="0"
+              required
+              class="form__input"
+              placeholder="0"
+              @input="handleScoreChange"
+            />
           </div>
+          <div class="form__group">
+            <label :for="`result-${room.team_away}`" class="form__label">{{ room.team_away }}</label>
+            <input
+              :id="`result-${room.team_away}`"
+              v-model.number="score.away"
+              type="number"
+              min="0"
+              required
+              class="form__input"
+              placeholder="0"
+              @input="handleScoreChange"
+            />
+          </div>
+        </div>
 
-          <div v-if="submitError" class="form__error">{{ submitError }}</div>
+        <div v-if="scoreError" class="form__error">{{ scoreError }}</div>
+        <div v-if="scoreLoading" class="form__info">Updating score...</div>
+      </div>
 
-          <button
-            type="submit"
-            :disabled="submitLoading"
-            class="btn btn--primary btn--full"
-          >
-            {{ submitLoading ? 'Submitting...' : 'Submit Results' }}
-          </button>
-        </form>
+      <!-- Close Match (for creator) -->
+      <div v-if="isCreator && room.status !== 'finished' && room.result_home !== null && room.result_away !== null" class="card">
+        <div class="card__header">
+          <h2 class="card__title">Close Match</h2>
+        </div>
+        
+        <p class="card__description">
+          Once you close the match, points will be distributed to participants based on their predictions.
+        </p>
+
+        <div v-if="closeError" class="form__error">{{ closeError }}</div>
+
+        <button
+          @click="handleCloseMatch"
+          :disabled="closeLoading"
+          class="btn btn--danger btn--full"
+        >
+          {{ closeLoading ? 'Closing...' : 'Close Match & Distribute Points' }}
+        </button>
       </div>
 
       <!-- Participants / Leaderboard -->
@@ -190,7 +218,8 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const { user } = useAuth()
-const { getRoom, getRoomParticipants, joinRoom, submitRoomResult } = useRooms()
+const { getRoom, getRoomParticipants, joinRoom } = useRooms()
+const { subscribeToRoomUpdates, unsubscribe } = useRealtime()
 const supabase = useSupabaseClient()
 
 const roomId = route.params.id as string
@@ -205,11 +234,15 @@ const pointsBet = ref(10)
 const joinLoading = ref(false)
 const joinError = ref('')
 
-const result = ref({ home: 0, away: 0 })
-const submitLoading = ref(false)
-const submitError = ref('')
+const score = ref({ home: 0, away: 0 })
+const scoreLoading = ref(false)
+const scoreError = ref('')
+
+const closeLoading = ref(false)
+const closeError = ref('')
 
 const userPoints = ref(100)
+const realtimeChannel = ref<any>(null)
 
 const sortedParticipants = computed(() => {
   return [...participants.value].sort((a, b) => {
@@ -229,7 +262,7 @@ const formatDate = (dateString: string) => {
 }
 
 const getStatusClass = (status: string) => {
-  const classes = {
+  const classes: { [key: string]: string } = {
     open: 'room__status--open',
     locked: 'room__status--locked',
     finished: 'room__status--finished'
@@ -252,18 +285,68 @@ const handleJoin = async () => {
   }
 }
 
-const handleSubmitResults = async () => {
-  submitLoading.value = true
-  submitError.value = ''
+let scoreUpdateTimeout: any = null
+
+const handleScoreChange = () => {
+  if (!user.value) return
+  
+  // Clear existing timeout
+  if (scoreUpdateTimeout) {
+    clearTimeout(scoreUpdateTimeout)
+  }
+
+  // Debounce the update (wait 1 second after user stops typing)
+  scoreUpdateTimeout = setTimeout(async () => {
+    await handleUpdateScore()
+  }, 1000)
+}
+
+const handleUpdateScore = async () => {
+  if (!user.value) return
+  
+  scoreLoading.value = true
+  scoreError.value = ''
 
   try {
-    await submitRoomResult(roomId, result.value)
-    await fetchRoom()
+    const response = await $fetch(`/api/rooms/${roomId}/score`, {
+      method: 'PATCH',
+      body: {
+        result_home: score.value.home,
+        result_away: score.value.away,
+        user_id: user.value.id
+      }
+    })
+    
+    // Update local state
+    room.value = { ...room.value, ...response }
+  } catch (err: any) {
+    scoreError.value = err.data?.statusMessage || err.message || 'Failed to update score'
+  } finally {
+    scoreLoading.value = false
+  }
+}
+
+const handleCloseMatch = async () => {
+  if (!user.value) return
+  
+  closeLoading.value = true
+  closeError.value = ''
+
+  try {
+    const response = await $fetch(`/api/rooms/${roomId}/close`, {
+      method: 'PATCH',
+      body: {
+        user_id: user.value.id
+      }
+    })
+    
+    // Update local state
+    room.value = { ...room.value, ...response }
     await fetchParticipants()
   } catch (err: any) {
-    submitError.value = err.message
+    closeError.value = err.data?.statusMessage || err.message || 'Failed to close match'
   } finally {
-    submitLoading.value = false
+    closeLoading.value = false
   }
 }
 
@@ -273,6 +356,14 @@ const fetchRoom = async () => {
     
     if (user.value) {
       isCreator.value = room.value.creator_id === user.value.id
+    }
+
+    // Initialize score with current room values
+    if (room.value) {
+      score.value = {
+        home: room.value.result_home || 0,
+        away: room.value.result_away || 0
+      }
     }
   } catch (error) {
     console.error('Failed to fetch room:', error)
@@ -318,7 +409,26 @@ onMounted(async () => {
     fetchUserPoints()
   ])
   
+  // Subscribe to real-time updates
+  if (room.value) {
+    realtimeChannel.value = subscribeToRoomUpdates(roomId, (payload) => {
+      if (payload.eventType === 'UPDATE') {
+        fetchRoom()
+        fetchParticipants()
+      }
+    })
+  }
+  
   loading.value = false
+})
+
+onUnmounted(() => {
+  if (realtimeChannel.value) {
+    unsubscribe(realtimeChannel.value)
+  }
+  if (scoreUpdateTimeout) {
+    clearTimeout(scoreUpdateTimeout)
+  }
 })
 </script>
 
