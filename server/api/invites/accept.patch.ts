@@ -51,21 +51,6 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Check if user is already a participant
-  const { data: existingParticipant } = await supabase
-    .from('room_participants')
-    .select('id')
-    .eq('room_id', invite.room.id)
-    .eq('user_id', user_id)
-    .single()
-
-  if (existingParticipant) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'You are already a participant in this room'
-    })
-  }
-
   // Update invite status to accepted
   const { data: updatedInvite, error: updateError } = await supabase
     .from('room_invites')
@@ -79,22 +64,6 @@ export default defineEventHandler(async (event) => {
       statusCode: 500,
       statusMessage: 'Failed to accept room invite'
     })
-  }
-
-  // Add user as participant with default prediction (they can update later)
-  const { error: participantError } = await supabase
-    .from('room_participants')
-    .insert([{
-      room_id: invite.room.id,
-      user_id: user_id,
-      prediction_home: 0,
-      prediction_away: 0,
-      points_bet: invite.room.entry_fee || 10
-    }])
-
-  if (participantError) {
-    console.error('Failed to add participant:', participantError)
-    // Don't fail the whole operation, just log the error
   }
 
   return updatedInvite

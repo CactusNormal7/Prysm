@@ -37,8 +37,18 @@
         </div>
       </div>
 
+      <!-- Access Denied for Private Rooms -->
+      <div v-if="room.type === 'private' && !hasAcceptedInvite && !isCreator" class="card">
+        <div class="card__header">
+          <h2 class="card__title">Private Room</h2>
+        </div>
+        <p class="access-denied-message">
+          This is a private room. You need an invitation to access it.
+        </p>
+      </div>
+
       <!-- Prediction Form (if room is open and user hasn't joined and is not creator) -->
-      <div v-if="room.status === 'open' && !hasJoined && !isCreator" class="card">
+      <div v-if="room.status === 'open' && !hasJoined && !isCreator && (room.type === 'public' || hasAcceptedInvite)" class="card">
         <div class="card__header">
           <h2 class="card__title">Make Your Prediction</h2>
         </div>
@@ -271,6 +281,7 @@ const room = ref<any>(null)
 const participants = ref<any[]>([])
 const hasJoined = ref(false)
 const isCreator = ref(false)
+const hasAcceptedInvite = ref(false)
 
 const prediction = ref({ home: 0, away: 0 })
 const pointsBet = ref(10)
@@ -487,6 +498,25 @@ const fetchInvitedUsers = async () => {
   }
 }
 
+const checkAcceptedInvite = async () => {
+  if (!user.value) return
+
+  try {
+    const { data } = await supabase
+      .from('room_invites')
+      .select('*')
+      .eq('room_id', roomId)
+      .eq('invitee_id', user.value.id)
+      .eq('status', 'accepted')
+      .single()
+
+    hasAcceptedInvite.value = !!data
+  } catch (error) {
+    console.error('Failed to check accepted invite:', error)
+    hasAcceptedInvite.value = false
+  }
+}
+
 const fetchRoom = async () => {
   try {
     room.value = await getRoom(roomId)
@@ -544,7 +574,8 @@ onMounted(async () => {
     fetchRoom(),
     fetchParticipants(),
     fetchUserPoints(),
-    fetchInvitedUsers()
+    fetchInvitedUsers(),
+    checkAcceptedInvite()
   ])
   
   // Subscribe to real-time updates
@@ -684,6 +715,24 @@ onUnmounted(() => {
 .invited-user__status.declined {
   background-color: #fee2e2;
   color: #991b1b;
+}
+
+.invite-message {
+  padding: 16px;
+  background-color: #d1fae5;
+  color: #065f46;
+  border-radius: 6px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.access-denied-message {
+  padding: 16px;
+  background-color: #fee2e2;
+  color: #991b1b;
+  border-radius: 6px;
+  margin: 0;
+  font-size: 14px;
 }
 </style>
 
