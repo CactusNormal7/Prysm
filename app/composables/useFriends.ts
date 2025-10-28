@@ -3,7 +3,7 @@ export const useFriends = () => {
   const { user } = useAuth()
 
   if (!supabase) {
-    throw new Error('Supabase client is not initialized')
+    console.warn('Supabase client is not initialized in useFriends')
   }
 
   const sendFriendRequest = async (friendId: string) => {
