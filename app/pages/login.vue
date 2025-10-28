@@ -44,9 +44,9 @@
       </form>
 
       <div class="auth-footer">
-        <button type="button" @click="handleMagicLink" class="btn btn--secondary btn--full btn--link">
+        <!-- <button type="button" @click="handleMagicLink" class="btn btn--secondary btn--full btn--link">
           Sign in with magic link
-        </button>
+        </button> -->
 
         <NuxtLink to="/register" class="auth-link">
           Don't have an account? Register
