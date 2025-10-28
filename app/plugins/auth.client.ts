@@ -28,12 +28,36 @@ export default defineNuxtPlugin({
         // Merge profile data with auth user
         const authUser = user.value as any
         if (authUser) {
-          user.value = { ...authUser, ...data } as any
+          const mergedUser = { ...authUser, ...data }
+          user.value = mergedUser as any
+          // Store profile data in localStorage for persistence
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('prysm_user_profile', JSON.stringify(data))
+          }
         }
         return data
       }
     } catch (err) {
       console.error('Error fetching user profile:', err)
+    }
+    return null
+  }
+
+  const restoreUserProfile = async (userId: string) => {
+    if (typeof window === 'undefined') return null
+    
+    try {
+      const cachedProfile = localStorage.getItem('prysm_user_profile')
+      if (cachedProfile) {
+        const profileData = JSON.parse(cachedProfile)
+        const authUser = user.value as any
+        if (authUser && profileData.id === userId) {
+          user.value = { ...authUser, ...profileData } as any
+          return profileData
+        }
+      }
+    } catch (err) {
+      console.error('Error restoring user profile:', err)
     }
     return null
   }
@@ -49,7 +73,11 @@ export default defineNuxtPlugin({
     if (user.value && currentSession) {
       const currentUser = user.value as any
       if (currentUser?.id) {
-        await fetchUserProfile(currentUser.id)
+        // Try to restore from cache first, then fetch if needed
+        const cachedProfile = await restoreUserProfile(currentUser.id)
+        if (!cachedProfile || !cachedProfile.total_points) {
+          await fetchUserProfile(currentUser.id)
+        }
       }
     }
 
@@ -58,6 +86,10 @@ export default defineNuxtPlugin({
       if (event === 'SIGNED_OUT') {
         user.value = null
         session.value = null
+        // Clear cached profile data
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('prysm_user_profile')
+        }
       } else if (newSession) {
         // Update user and session
         session.value = newSession

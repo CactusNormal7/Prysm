@@ -219,7 +219,7 @@ const route = useRoute()
 const router = useRouter()
 const { user } = useAuth()
 const { getRoom, getRoomParticipants, joinRoom } = useRooms()
-const { subscribeToRoomUpdates, unsubscribe } = useRealtime()
+const { subscribeToRoomUpdates, subscribeToScoreUpdates, unsubscribe } = useRealtime()
 const supabase = useSupabaseClient()
 
 const roomId = route.params.id as string
@@ -285,20 +285,10 @@ const handleJoin = async () => {
   }
 }
 
-let scoreUpdateTimeout: any = null
-
-const handleScoreChange = () => {
+const handleScoreChange = async () => {
   if (!user.value) return
   
-  // Clear existing timeout
-  if (scoreUpdateTimeout) {
-    clearTimeout(scoreUpdateTimeout)
-  }
-
-  // Debounce the update (wait 1 second after user stops typing)
-  scoreUpdateTimeout = setTimeout(async () => {
-    await handleUpdateScore()
-  }, 1000)
+  await handleUpdateScore()
 }
 
 const handleUpdateScore = async () => {
@@ -417,6 +407,21 @@ onMounted(async () => {
         fetchParticipants()
       }
     })
+
+    // Subscribe to score updates specifically
+    const scoreChannel = subscribeToScoreUpdates(roomId, (payload) => {
+      // Update local score display immediately
+      if (payload.new.result_home !== null && payload.new.result_away !== null) {
+        score.value = {
+          home: payload.new.result_home,
+          away: payload.new.result_away
+        }
+        room.value = { ...room.value, ...payload.new }
+      }
+    })
+    
+    // Store score channel for cleanup
+    realtimeChannel.value = [realtimeChannel.value, scoreChannel]
   }
   
   loading.value = false
@@ -424,10 +429,11 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (realtimeChannel.value) {
-    unsubscribe(realtimeChannel.value)
-  }
-  if (scoreUpdateTimeout) {
-    clearTimeout(scoreUpdateTimeout)
+    if (Array.isArray(realtimeChannel.value)) {
+      realtimeChannel.value.forEach(channel => unsubscribe(channel))
+    } else {
+      unsubscribe(realtimeChannel.value)
+    }
   }
 })
 </script>

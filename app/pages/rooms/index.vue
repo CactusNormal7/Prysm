@@ -41,7 +41,15 @@
           @click="navigateTo(`/rooms/${room.id}`)"
         >
           <div class="room__header">
-            <h3 class="room__title">{{ room.name }}</h3>
+            <h3 class="room__title">
+              {{ room.name }}
+              <span v-if="room.type === 'private'" class="room__private-badge">
+                <svg class="room__private-icon" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                </svg>
+                Private
+              </span>
+            </h3>
             <span :class="getStatusClass(room.status)" class="room__status">
               {{ room.status }}
             </span>
@@ -100,6 +108,7 @@ const getStatusClass = (status: string) => {
 
 onMounted(async () => {
   try {
+    // Fetch both public rooms and private rooms user is invited to
     rooms.value = await getRooms()
   } catch (error) {
     console.error('Failed to fetch rooms:', error)

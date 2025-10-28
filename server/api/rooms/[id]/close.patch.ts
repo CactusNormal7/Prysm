@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if (method === 'PUT') {
+  if (method === 'PATCH') {
     const body = await readBody(event)
     const { user_id } = body
 
