@@ -12,7 +12,7 @@
         </div>
         <div class="nav__user">
           <!-- Notification Bell -->
-          <div v-if="user" class="notifications-dropdown" @click.stop="showNotifications = !showNotifications">
+          <div v-if="user && isInitialized" class="notifications-dropdown" @click.stop="showNotifications = !showNotifications">
             <button class="notification-bell">
               <i class="fa-solid fa-bell"></i>
               <span v-if="notificationCount > 0" class="notification-badge">{{ notificationCount }}</span>
@@ -70,16 +70,22 @@
             </div>
           </div>
 
-          <NuxtLink v-if="user && user.total_points !== undefined" to="/profile" class="btn btn--link">
+          <!-- User Points / Profile Link -->
+          <NuxtLink v-if="user && isInitialized && user.total_points !== undefined" to="/profile" class="btn btn--link">
             <span class="user-points">{{ user.total_points }} pts</span>
           </NuxtLink>
-          <NuxtLink v-else-if="user" to="/profile" class="btn btn--link">
+          <NuxtLink v-else-if="user && isInitialized && isLoading" to="/profile" class="btn btn--link">
             <span class="user-points">Loading...</span>
+          </NuxtLink>
+          <NuxtLink v-else-if="!isInitialized" to="/login" class="btn btn--secondary">
+            <span>Sign in</span>
           </NuxtLink>
           <NuxtLink v-else to="/login" class="btn btn--secondary">
             Sign in
           </NuxtLink>
-          <button v-if="user" @click="handleSignOut" class="btn btn--link">
+          
+          <!-- Sign Out Button -->
+          <button v-if="user && isInitialized" @click="handleSignOut" class="btn btn--link">
             Sign out
           </button>
         </div>
@@ -94,13 +100,14 @@
 </template>
 
 <script setup lang="ts">
-const { user, signOut } = useAuth()
+const { user, signOut, isInitialized, isLoading } = useAuth()
 const { roomInvites, notificationCount, fetchNotifications } = useNotifications()
 const { acceptRoomInvite: acceptRoomInviteAPI, declineRoomInvite: declineRoomInviteAPI } = useInvites()
 const router = useRouter()
 
 const showNotifications = ref(false)
 const processing = ref(false)
+let userPointsChannel: any = null
 
 const handleSignOut = async () => {
   await signOut()
@@ -146,67 +153,92 @@ const formatDate = (dateString: string) => {
   })
 }
 
+// Setup real-time subscription for user points
+const setupUserPointsSubscription = () => {
+  if (!user.value?.id) return
+  
+  const supabase = useNuxtApp().$supabase
+  if (!supabase) return
+  
+  // Clean up existing subscription
+  if (userPointsChannel) {
+    supabase.removeChannel(userPointsChannel)
+  }
+  
+  userPointsChannel = supabase
+    .channel(`user-points-${user.value.id}`)
+    .on(
+      'postgres_changes',
+      { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'users', 
+        filter: `id=eq.${user.value.id}` 
+      },
+      (payload) => {
+        // Update user points in real-time
+        if (payload.new.total_points !== undefined) {
+          user.value = { ...user.value, total_points: payload.new.total_points }
+        }
+      }
+    )
+    .subscribe()
+}
+
+// Clean up subscription
+const cleanupUserPointsSubscription = () => {
+  if (userPointsChannel) {
+    const supabase = useNuxtApp().$supabase
+    if (supabase) {
+      supabase.removeChannel(userPointsChannel)
+    }
+    userPointsChannel = null
+  }
+}
+
 // Close notifications when clicking outside
 onMounted(async () => {
   document.addEventListener('click', async () => {
     showNotifications.value = false
-    await fetchNotifications()
+    if (user.value) {
+      await fetchNotifications()
+    }
   })
 
+  // Wait for auth to be initialized
+  await nextTick()
   
-  // Ensure user profile is loaded if user exists
-  if (user.value) {
+  if (user.value && isInitialized.value) {
     try {
       await fetchNotifications()
-      // Also ensure profile data is present
-      if (!user.value.total_points && user.value.id) {
-        const supabase = useNuxtApp().$supabase
-        if (supabase) {
-          const { data: profileData } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', user.value.id)
-            .single()
-          
-          if (profileData) {
-            user.value = { ...user.value, ...profileData }
-          }
-        }
-      }
-      
-      // Subscribe to user points updates for real-time updates
-      if (user.value.id) {
-        const supabase = useNuxtApp().$supabase
-        if (supabase) {
-          const userChannel = supabase
-            .channel(`user-points-${user.value.id}`)
-            .on(
-              'postgres_changes',
-              { 
-                event: 'UPDATE', 
-                schema: 'public', 
-                table: 'users', 
-                filter: `id=eq.${user.value.id}` 
-              },
-              (payload) => {
-                // Update user points in real-time
-                if (payload.new.total_points !== undefined) {
-                  user.value = { ...user.value, total_points: payload.new.total_points }
-                }
-              }
-            )
-            .subscribe()
-          
-          // Store channel for cleanup
-          onUnmounted(() => {
-            supabase.removeChannel(userChannel)
-          })
-        }
-      }
+      setupUserPointsSubscription()
     } catch (error) {
       console.error('Error in layout onMounted:', error)
     }
   }
+})
+
+// Watch for user changes to setup/cleanup subscriptions
+watch(user, (newUser, oldUser) => {
+  if (newUser && isInitialized.value) {
+    setupUserPointsSubscription()
+  } else if (!newUser && oldUser) {
+    cleanupUserPointsSubscription()
+  }
+}, { immediate: false })
+
+// Watch for initialization changes
+watch(isInitialized, (newValue) => {
+  if (newValue && user.value) {
+    setupUserPointsSubscription()
+    fetchNotifications()
+  }
+}, { immediate: false })
+
+// Cleanup on unmount
+onUnmounted(() => {
+  cleanupUserPointsSubscription()
+  document.removeEventListener('click', () => {})
 })
 </script>
 

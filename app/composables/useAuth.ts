@@ -1,136 +1,191 @@
 export const useAuth = () => {
   const nuxtApp = useNuxtApp()
-  const supabase = nuxtApp.$supabase || null
-  const user = useState<any>('supabase_user', () => null)
-  const session = useState<any>('supabase_session', () => null)
+  const supabase = nuxtApp.$supabase
+  
+  // État simple et réactif
+  const user = useState<any>('auth_user', () => null)
+  const session = useState<any>('auth_session', () => null)
+  const isLoading = useState<boolean>('auth_loading', () => false)
+  const isInitialized = useState<boolean>('auth_initialized', () => false)
 
-  const fetchUserProfile = async () => {
-    if (!user.value || !supabase) return null
-
+  // Fonction pour récupérer le profil utilisateur
+  const fetchUserProfile = async (userId: string) => {
+    if (!supabase) return null
+    
     try {
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('id', user.value.id)
+        .eq('id', userId)
         .single()
 
       if (error) throw error
-
-      // Merge profile data with auth user
-      user.value = { ...user.value, ...data }
       return data
-    } catch (err) {
-      console.error('Error fetching user profile:', err)
+    } catch (error) {
+      console.error('Erreur lors de la récupération du profil:', error)
       return null
     }
   }
 
-  // Ensure user profile is loaded when accessing user
-  const ensureUserProfile = async () => {
-    if (!user.value || !supabase) return
-    // Check if profile data is already loaded (has total_points or other custom fields)
-    if (user.value.total_points !== undefined) return
-    await fetchUserProfile()
-  }
-
-  const signIn = async (email: string, password: string) => {
-    if (!supabase) throw new Error('Supabase client is not initialized')
-    
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
-    
-    if (error) throw error
-    
-    if (data.session) {
-      user.value = data.session.user
-      session.value = data.session
-    }
-    
-    return data
-  }
-
-  const signUp = async (email: string, password: string) => {
-    if (!supabase) throw new Error('Supabase client is not initialized')
-    
-    const emailRedirectTo = import.meta.client ? `${window.location.origin}/auth/callback` : ''
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo
-      }
-    })
-    
-    if (error) throw error
-    
-    if (data.session) {
-      user.value = data.session.user
-      session.value = data.session
-    } else if (data.user) {
-      // User created but needs to confirm email
-      user.value = data.user
-    }
-    
-    return data
-  }
-
-  const signOut = async () => {
-    if (!supabase) throw new Error('Supabase client is not initialized')
-    
-    const { error } = await supabase.auth.signOut()
-    
-    if (error) throw error
-    
-    user.value = null
-    session.value = null
-  }
-
-  const signInWithMagicLink = async (email: string) => {
-    if (!supabase) throw new Error('Supabase client is not initialized')
-    
-    const { data, error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: import.meta.client ? `${window.location.origin}/auth/callback` : ''
-      }
-    })
-    
-    if (error) throw error
-    return data
-  }
-
-  const refreshSession = async () => {
-    if (!supabase) return null
+  // Initialisation simple de l'authentification
+  const initializeAuth = async () => {
+    if (isInitialized.value || !supabase) return
     
     try {
-      const { data: { session: newSession }, error } = await supabase.auth.refreshSession()
+      isLoading.value = true
+      
+      // Récupérer la session actuelle
+      const { data: { session: currentSession }, error } = await supabase.auth.getSession()
+      
+      if (error) {
+        console.error('Erreur lors de la récupération de la session:', error)
+        return
+      }
+
+      // Mettre à jour l'état
+      session.value = currentSession
+      user.value = currentSession?.user || null
+
+      // Si l'utilisateur est connecté, récupérer son profil
+      if (currentSession?.user) {
+        const profile = await fetchUserProfile(currentSession.user.id)
+        if (profile) {
+          user.value = { ...currentSession.user, ...profile }
+        }
+      }
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'initialisation:', error)
+    } finally {
+      isLoading.value = false
+      isInitialized.value = true
+    }
+  }
+
+  // Connexion
+  const signIn = async (email: string, password: string) => {
+    if (!supabase) throw new Error('Client Supabase non initialisé')
+    
+    try {
+      isLoading.value = true
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
       
       if (error) throw error
       
-      if (newSession) {
-        session.value = newSession
-        user.value = newSession.user
+      // Mettre à jour l'état après connexion réussie
+      session.value = data.session
+      user.value = data.session?.user || null
+      
+      // Récupérer le profil utilisateur
+      if (data.session?.user) {
+        const profile = await fetchUserProfile(data.session.user.id)
+        if (profile) {
+          user.value = { ...data.session.user, ...profile }
+        }
       }
       
-      return newSession
-    } catch (err) {
-      console.error('Error refreshing session:', err)
-      return null
+      return data
+    } catch (error) {
+      console.error('Erreur de connexion:', error)
+      throw error
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Inscription
+  const signUp = async (email: string, password: string) => {
+    if (!supabase) throw new Error('Client Supabase non initialisé')
+    
+    try {
+      isLoading.value = true
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: import.meta.client ? `${window.location.origin}/auth/callback` : ''
+        }
+      })
+      
+      if (error) throw error
+      
+      // Si l'utilisateur est automatiquement connecté
+      if (data.session) {
+        session.value = data.session
+        user.value = data.session.user
+        
+        const profile = await fetchUserProfile(data.session.user.id)
+        if (profile) {
+          user.value = { ...data.session.user, ...profile }
+        }
+      }
+      
+      return data
+    } catch (error) {
+      console.error('Erreur d\'inscription:', error)
+      throw error
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Déconnexion
+  const signOut = async () => {
+    if (!supabase) throw new Error('Client Supabase non initialisé')
+    
+    try {
+      isLoading.value = true
+      
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      
+      // Réinitialiser l'état
+      user.value = null
+      session.value = null
+      
+    } catch (error) {
+      console.error('Erreur de déconnexion:', error)
+      throw error
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Connexion avec magic link
+  const signInWithMagicLink = async (email: string) => {
+    if (!supabase) throw new Error('Client Supabase non initialisé')
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: import.meta.client ? `${window.location.origin}/auth/callback` : ''
+        }
+      })
+      
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('Erreur magic link:', error)
+      throw error
     }
   }
 
   return {
     user,
     session,
+    isLoading: readonly(isLoading),
+    isInitialized: readonly(isInitialized),
     signIn,
     signUp,
     signOut,
     signInWithMagicLink,
-    fetchUserProfile,
-    refreshSession
+    initializeAuth,
+    fetchUserProfile
   }
 }
-

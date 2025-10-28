@@ -1,13 +1,13 @@
 export default defineNuxtRouteMiddleware(async (to, from) => {
-  const supabase = useNuxtApp().$supabase;
+  const { user, isInitialized, initializeAuth } = useAuth()
 
-  if (!supabase) {
-    return navigateTo('/login');
+  // Initialiser l'auth si ce n'est pas déjà fait
+  if (!isInitialized.value) {
+    await initializeAuth()
   }
 
-  const { data: { user }, error } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return navigateTo('/login');
+  // Vérifier si l'utilisateur est connecté
+  if (!user.value) {
+    return navigateTo('/login')
   }
-});
+})
