@@ -90,7 +90,7 @@ const formatDate = (dateString: string) => {
 }
 
 const getStatusClass = (status: string) => {
-  const classes = {
+  const classes: Record<string, string> = {
     open: 'room__status--open',
     locked: 'room__status--locked',
     finished: 'room__status--finished'

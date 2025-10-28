@@ -89,13 +89,16 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString()
 }
 
+const classes = {
+  open: 'room__status--open',
+  locked: 'room__status--locked',
+  finished: 'room__status--finished'
+} as const
+
+type RoomStatus = keyof typeof classes
+
 const getStatusClass = (status: string) => {
-  const classes = {
-    open: 'room__status--open',
-    locked: 'room__status--locked',
-    finished: 'room__status--finished'
-  }
-  return classes[status] || ''
+  return classes[status as RoomStatus] || ''
 }
 
 onMounted(async () => {

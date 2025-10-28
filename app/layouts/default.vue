@@ -12,7 +12,7 @@
         </div>
         <div class="nav__user">
           <NuxtLink v-if="user" to="/profile" class="btn btn--link">
-            <span class="user-points">{{ user.total_points || 100 }} pts</span>
+            <span class="username">{{ displayName || 'Profile' }}</span>
           </NuxtLink>
           <NuxtLink v-else to="/login" class="btn btn--secondary">
             Sign in
@@ -24,7 +24,6 @@
       </div>
     </nav>
 
-    <!-- Main Content -->
     <main class="main-content">
       <slot />
     </main>
@@ -32,12 +31,18 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 const { user, signOut } = useAuth()
 const router = useRouter()
+
+const displayName = computed(() => {
+  const u = user?.value ?? null
+  if (!u) return null
+  return (u.username as string) || (u.user_metadata?.full_name as string) || (u.email as string) || null
+})
 
 const handleSignOut = async () => {
   await signOut()
   router.push('/login')
 }
 </script>
-
