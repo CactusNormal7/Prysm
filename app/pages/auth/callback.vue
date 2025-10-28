@@ -11,7 +11,7 @@ definePageMeta({
   layout: false
 })
 
-const supabase = useSupabaseClient()
+const supabase = useNuxtApp().$supabase
 const router = useRouter()
 const { user, fetchUserProfile } = useAuth()
 

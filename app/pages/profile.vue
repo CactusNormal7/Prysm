@@ -54,7 +54,7 @@ definePageMeta({
 })
 
 const { user } = useAuth()
-const supabase = useSupabaseClient()
+const supabase = useNuxtApp().$supabase
 
 const loading = ref(true)
 const stats = ref({ roomsJoined: 0 })

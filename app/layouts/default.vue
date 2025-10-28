@@ -184,7 +184,7 @@ onMounted(async () => {
       await fetchNotifications()
       // Also ensure profile data is present
       if (!user.value.total_points && user.value.id) {
-        const supabase = useSupabaseClient()
+        const supabase = useNuxtApp().$supabase
         if (supabase) {
           const { data: profileData } = await supabase
             .from('users')

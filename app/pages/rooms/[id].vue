@@ -220,7 +220,7 @@ const router = useRouter()
 const { user } = useAuth()
 const { getRoom, getRoomParticipants, joinRoom } = useRooms()
 const { subscribeToRoomUpdates, subscribeToScoreUpdates, unsubscribe } = useRealtime()
-const supabase = useSupabaseClient()
+const supabase = useNuxtApp().$supabase
 
 const roomId = route.params.id as string
 const loading = ref(true)
@@ -294,7 +294,7 @@ const handleScoreChange = async () => {
 const handleUpdateScore = async () => {
   if (!user.value) return
   
-  scoreLoading.value = true
+  // scoreLoading.value = true
   scoreError.value = ''
 
   try {

@@ -2,7 +2,7 @@ import { onBeforeUnmount } from 'vue'
 import { useSupabaseClient } from './useSupabase'
 
 export const useRealtime = () => {
-  const supabase = useSupabaseClient()
+  const supabase = useNuxtApp().$supabase
 
   if (!supabase) {
     throw new Error('Supabase client is not initialized')

@@ -73,7 +73,7 @@
 
 <script setup lang="ts">
 const { user } = useAuth()
-const supabase = useSupabaseClient()
+const supabase = useNuxtApp().$supabase
 
 const activeRooms = ref<any[]>([])
 const configError = ref(false)

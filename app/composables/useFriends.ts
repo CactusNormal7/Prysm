@@ -1,5 +1,5 @@
 export const useFriends = () => {
-  const supabase = useSupabaseClient()
+  const supabase = useNuxtApp().$supabase
   const { user } = useAuth()
 
   if (!supabase) {

@@ -40,7 +40,7 @@ definePageMeta({
   middleware: 'auth'
 })
 
-const supabase = useSupabaseClient()
+const supabase = useNuxtApp().$supabase
 
 const loading = ref(true)
 const leaderboard = ref<any[]>([])
