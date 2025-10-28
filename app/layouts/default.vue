@@ -173,12 +173,33 @@ const declineRoomInvite = async (id: string) => {
 }
 
 // Close notifications when clicking outside
-onMounted(() => {
+onMounted(async () => {
   document.addEventListener('click', () => {
     showNotifications.value = false
   })
+  
+  // Ensure user profile is loaded if user exists
   if (user.value) {
-    fetchNotifications()
+    try {
+      await fetchNotifications()
+      // Also ensure profile data is present
+      if (!user.value.total_points && user.value.id) {
+        const supabase = useSupabaseClient()
+        if (supabase) {
+          const { data: profileData } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.value.id)
+            .single()
+          
+          if (profileData) {
+            user.value = { ...user.value, ...profileData }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error in layout onMounted:', error)
+    }
   }
 })
 </script>

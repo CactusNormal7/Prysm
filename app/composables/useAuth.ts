@@ -33,20 +33,6 @@ export const useAuth = () => {
     await fetchUserProfile()
   }
 
-  // Automatically fetch user profile when user is set (but only if profile data is missing)
-  watch(user, async (newUser) => {
-    if (newUser && supabase) {
-      await ensureUserProfile()
-    }
-  }, { immediate: false })
-
-  // Ensure profile is loaded on initial mount if user is already authenticated
-  onMounted(async () => {
-    if (user.value && supabase) {
-      await ensureUserProfile()
-    }
-  })
-
   const signIn = async (email: string, password: string) => {
     if (!supabase) throw new Error('Supabase client is not initialized')
     

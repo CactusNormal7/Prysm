@@ -64,7 +64,11 @@ export default defineNuxtPlugin({
 
   try {
     // Get initial session (this will get the session from localStorage automatically)
-    const { data: { session: currentSession } } = await $supabase.auth.getSession()
+    const { data: { session: currentSession }, error } = await $supabase.auth.getSession()
+    
+    if (error) {
+      console.error('Error getting session:', error)
+    }
     
     session.value = currentSession
     user.value = currentSession?.user || null
@@ -83,6 +87,8 @@ export default defineNuxtPlugin({
 
     // Listen for auth changes
     $supabase.auth.onAuthStateChange(async (event, newSession) => {
+      console.log('Auth state changed:', event)
+      
       if (event === 'SIGNED_OUT') {
         user.value = null
         session.value = null
@@ -99,7 +105,7 @@ export default defineNuxtPlugin({
         if (event === 'SIGNED_IN' && newSession.user) {
           await fetchUserProfile(newSession.user.id)
         }
-        // On TOKEN_REFRESHED, we keep the existing user data
+        // On TOKEN_REFRESHED, keep the existing user data
         // and only refresh the profile if it's missing
         else if (event === 'TOKEN_REFRESHED' && newSession.user) {
           const currentUser = user.value as any
@@ -109,6 +115,39 @@ export default defineNuxtPlugin({
         }
       }
     })
+
+    // Handle page visibility changes to refresh session when tab becomes visible
+    if (typeof document !== 'undefined') {
+      let isRefreshing = false
+      document.addEventListener('visibilitychange', async () => {
+        if (!document.hidden && session.value && !isRefreshing) {
+          isRefreshing = true
+          try {
+            // Refresh session silently
+            const { data, error } = await $supabase.auth.refreshSession()
+            if (!error && data.session) {
+              session.value = data.session
+              // Optionally refetch user profile to get latest data
+              const currentUser = user.value as any
+              if (currentUser?.id) {
+                await fetchUserProfile(currentUser.id)
+              }
+            }
+          } catch (err) {
+            console.error('Error refreshing session:', err)
+            // If session refresh fails, check if session is still valid
+            const { data: { session: currentSession } } = await $supabase.auth.getSession()
+            if (!currentSession) {
+              console.log('Session lost after refresh, signing out')
+              user.value = null
+              session.value = null
+            }
+          } finally {
+            isRefreshing = false
+          }
+        }
+      })
+    }
   } catch (error) {
     console.error('Error initializing Supabase auth:', error)
   }

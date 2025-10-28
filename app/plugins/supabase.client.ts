@@ -21,8 +21,7 @@ export default defineNuxtPlugin({
           persistSession: true,
           detectSessionInUrl: true,
           flowType: 'pkce',
-          storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-          storageKey: 'supabase.auth.token'
+          storage: typeof window !== 'undefined' ? window.localStorage : undefined
         }
       }
     )
